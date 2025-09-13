@@ -173,6 +173,8 @@ def play_game(api_key: str = None) -> None:
                 # Submit answer
                 print_colored("🔄 Processing your answer...", Colors.YELLOW)
                 response = game.submit_answer(user_input)
+                response = response.split("</END_SCORE>")
+                response = response[1].strip()
                 print_response(response)
                 
                 # Check if game is over

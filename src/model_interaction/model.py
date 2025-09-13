@@ -1,3 +1,10 @@
+"""
+Interview Boss Battle Game
+
+A gamified interview preparation system that turns technical interviews 
+into an RPG-style boss battle game using AI.
+"""
+
 import anthropic
 import os
 import re
@@ -5,66 +12,100 @@ from typing import Dict, Tuple, Optional
 
 
 class InterviewBossGame:
-    """A gamified interview preparation system with RPG-style boss battles."""
+    """
+    A gamified interview preparation system with RPG-style boss battles.
     
-    # Game configuration
+    Players progress through 3 levels of software engineering roles by 
+    answering interview questions correctly and defeating AI-powered bosses.
+    """
+    
+    # ==================== GAME CONFIGURATION ====================
+    
     MAX_LEVEL = 3
     MAX_HP = 100
     SCORE_RANGE = (-10, 10)
     
-    # Boss definitions
+    # ==================== BOSS DEFINITIONS ====================
+    
     BOSSES = {
         1: {
             "name": "Senior Developer Sarah",
             "personality": "Encouraging mentor who focuses on fundamentals",
-            "question_types": ["Data structures", "Basic algorithms", "OOP concepts", "Code review"]
+            "question_types": [
+                "Data structures", 
+                "Basic algorithms", 
+                "OOP concepts", 
+                "Code review"
+            ]
         },
         2: {
             "name": "Engineering Manager Marcus", 
             "personality": "Business-focused leader who cares about scalability",
-            "question_types": ["System design", "Database design", "API design", "Performance optimization"]
+            "question_types": [
+                "System design", 
+                "Database design", 
+                "API design", 
+                "Performance optimization"
+            ]
         },
         3: {
             "name": "Staff Engineer Dr. Chen",
             "personality": "Brilliant architect who expects excellence", 
-            "question_types": ["Distributed systems", "Technical leadership", "Architecture decisions", "Complex problem solving"]
+            "question_types": [
+                "Distributed systems", 
+                "Technical leadership", 
+                "Architecture decisions", 
+                "Complex problem solving"
+            ]
         }
     }
     
+    # ==================== SYSTEM PROMPT ====================
+    
     SYSTEM_PROMPT = """You are the Interview Boss Battle Master!
 
-        GAME RULES:
-        - Player starts as Junior Software Engineer (Level 1) and must defeat bosses to advance
-        - 3 Levels: Junior SWE → Senior SWE → Staff SWE
-        - Each level has a unique boss with different personality and question difficulty
-        - After each user answer, you MUST respond in this exact format:
+GAME RULES:
+- Player starts as Junior Software Engineer (Level 1) and must defeat bosses to advance
+- 3 Levels: Junior SWE → Senior SWE → Staff SWE
+- Each level has a unique boss with different personality and question difficulty
+- After each user answer, you MUST respond in this exact format:
 
-        First Line: <score< SCORE </score> where SCORE from -10 to +10 (e.g., "+7" or "-3")
-        After that: </END_SCORE>
-        Then give detailed feedback on the user answer combined with the correct answer.
-        After that, give the next question.
+First Line: <score> SCORE </score> where SCORE from -10 to +10 (e.g., "+7" or "-3")
+After that: </END_SCORE>
+The XML Formatting is important. Do not remove it.
+Then give detailed feedback on the user answer combined with the correct answer.
+After that, give the next question.
 
-        The very first question does not need the xml tag parts. Only give that once you have user answers.
+The very first question does not need the xml tag parts. Only give that once you have user answers.
 
-        SCORING GUIDELINES:
-        +8 to +10: Exceptional answer, shows deep understanding
-        +5 to +7: Good answer, solid technical knowledge
-        +1 to +4: Acceptable answer, room for improvement
-        0: Neutral answer, neither good nor bad
-        -1 to -4: Poor answer, missing key concepts
-        -5 to -7: Bad answer, shows lack of understanding
-        -8 to -10: Terrible answer, completely wrong or irrelevant
+SCORING GUIDELINES:
++8 to +10: Exceptional answer, shows deep understanding
++5 to +7: Good answer, solid technical knowledge
++1 to +4: Acceptable answer, room for improvement
+0: Neutral answer, neither good nor bad
+-1 to -4: Poor answer, missing key concepts
+-5 to -7: Bad answer, shows lack of understanding
+-8 to -10: Terrible answer, completely wrong or irrelevant
 
-        BOSS PERSONALITIES:
-        Level 1 - Senior Developer "Sarah": Encouraging but thorough, asks foundational questions
-        Level 2 - Engineering Manager "Marcus": Direct and business-focused, asks system design questions
-        Level 3 - Staff Engineer "Dr. Chen": Brilliant and demanding, asks architecture and leadership questions
+BOSS PERSONALITIES:
+Level 1 - Senior Developer "Sarah": Encouraging but thorough, asks foundational questions
+Level 2 - Engineering Manager "Marcus": Direct and business-focused, asks system design questions
+Level 3 - Staff Engineer "Dr. Chen": Brilliant and demanding, asks architecture and leadership questions
 
-        Always stay in character as the current boss and make the feedback engaging and educational!
-    """
+Always stay in character as the current boss and make the feedback engaging and educational!"""
+
+    # ==================== INITIALIZATION ====================
 
     def __init__(self, api_key: Optional[str] = None):
-        """Initialize the game with API client."""
+        """
+        Initialize the game with API client.
+        
+        Args:
+            api_key: Anthropic API key. If None, uses ANTHROPIC_API_KEY env var.
+        
+        Raises:
+            ValueError: If no API key is provided or found in environment.
+        """
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         if not self.api_key:
             raise ValueError("ANTHROPIC_API_KEY environment variable is required")
@@ -73,7 +114,9 @@ class InterviewBossGame:
         self.conversation_history = []
         self.reset_game()
 
-    def reset_game(self):
+    # ==================== GAME STATE MANAGEMENT ====================
+
+    def reset_game(self) -> None:
         """Reset game to initial state."""
         self.level = 1
         self.boss_hp = self.MAX_HP
@@ -88,40 +131,66 @@ class InterviewBossGame:
         """Get current boss information."""
         return self.BOSSES.get(self.level, self.BOSSES[1])
 
+    # ==================== PROMPT GENERATION ====================
+
     def _create_game_state_prompt(self) -> str:
         """Create game state context for LLM."""
         boss_info = self.get_boss_info()
         return f"""CURRENT GAME STATE:
-        Level: {self.level}/{self.MAX_LEVEL}
-        Boss: {boss_info['name']} (HP: {self.boss_hp}/{self.MAX_HP})
-        Your HP: {self.user_hp}/{self.MAX_HP}
-        Turn: {self.turn_count}
+Level: {self.level}/{self.MAX_LEVEL}
+Boss: {boss_info['name']} (HP: {self.boss_hp}/{self.MAX_HP})
+Your HP: {self.user_hp}/{self.MAX_HP}
+Turn: {self.turn_count}
 
-        Boss Personality: {boss_info['personality']}
-        Question Focus: {', '.join(boss_info['question_types'])}
+Boss Personality: {boss_info['personality']}
+Question Focus: {', '.join(boss_info['question_types'])}
 
-        You are currently {boss_info['name']}. Ask an appropriate interview question for this level and maintain your character throughout the interaction.
-        """
+You are currently {boss_info['name']}. Ask an appropriate interview question for this level and maintain your character throughout the interaction."""
+
+    # ==================== SCORE PARSING ====================
 
     def _parse_score(self, response: str) -> Tuple[int, str]:
-        """Parse score from LLM response."""
+        """
+        Parse score from LLM response.
+        
+        Args:
+            response: Raw response from LLM
+            
+        Returns:
+            Tuple of (score, feedback_text)
+        """
         lines = response.strip().split('\n')
         if not lines:
             return 0, response
 
         first_line = lines[0].strip()
-        score_match = re.search(r'([+-]?\d+)', first_line)
-        
+        score_match = re.search(r'<score>\s*([+-]?\d+)\s*</score>', first_line)
+
         if score_match:
             score = int(score_match.group(1))
-            score = max(self.SCORE_RANGE[0], min(self.SCORE_RANGE[1], score))
+            # Clamp the score to the allowed range [-10, 10]
+            score = max(-10, min(10, score))
             feedback = '\n'.join(lines[1:]).strip() if len(lines) > 1 else "No feedback provided."
             return score, feedback
         
         return 0, response
 
+    # ==================== API COMMUNICATION ====================
+
     def _make_api_call(self, user_message: str, max_tokens: int = 1000) -> str:
-        """Make API call to Claude with continuous conversation context."""
+        """
+        Make API call to Claude with continuous conversation context.
+        
+        Args:
+            user_message: Message to send to the LLM
+            max_tokens: Maximum tokens for response
+            
+        Returns:
+            Assistant response text
+            
+        Raises:
+            Exception: If API call fails
+        """
         try:
             # Add user message to conversation history
             self.conversation_history.append({"role": "user", "content": user_message})
@@ -139,11 +208,19 @@ class InterviewBossGame:
             self.conversation_history.append({"role": "assistant", "content": assistant_response})
             
             return assistant_response
+            
         except Exception as e:
             raise Exception(f"API call failed: {e}")
 
+    # ==================== GAME ACTIONS ====================
+
     def get_question(self) -> str:
-        """Get a new interview question from current boss."""
+        """
+        Get a new interview question from current boss.
+        
+        Returns:
+            Question text or error message
+        """
         if self.game_over:
             return "Game Over! Type 'reset' to play again."
 
@@ -155,14 +232,17 @@ class InterviewBossGame:
 
 Welcome to the Interview Boss Battle! I am {self.get_boss_info()['name']}. 
 Ask the candidate an interview question appropriate for this level."""
+                
+                question = self._make_api_call(initial_prompt)
             else:
                 # Continue conversation - ask for next question
                 game_state = self._create_game_state_prompt()
                 prompt = f"""{game_state}
 
 The candidate has answered. Now ask the next interview question appropriate for this level."""
+                
+                question = self._make_api_call(prompt)
             
-            question = self._make_api_call(initial_prompt if not self.conversation_history else prompt)
             self.current_question = question
             return question
             
@@ -170,7 +250,15 @@ The candidate has answered. Now ask the next interview question appropriate for 
             return f"Error getting question: {e}"
 
     def submit_answer(self, user_answer: str) -> str:
-        """Submit user answer and get feedback."""
+        """
+        Submit user answer and get feedback.
+        
+        Args:
+            user_answer: User's answer to the current question
+            
+        Returns:
+            Formatted response with score, feedback, and game state
+        """
         if self.game_over:
             if user_answer.lower() == 'reset':
                 self.reset_game()
@@ -194,16 +282,17 @@ Now evaluate this answer and respond as {boss_info['name']}. Remember:
 - After feedback, ask the next question"""
 
             response = self._make_api_call(evaluation_prompt, max_tokens=1024)
+            
             score, feedback = self._parse_score(response)
 
             # Update HP based on score
             if score > 0:
-                damage = min(score * 15, self.boss_hp)
+                damage = score
                 self.boss_hp -= damage
                 result_msg = f"💥 Boss takes {damage} damage!"
             elif score < 0:
-                damage = min(abs(score) * 5, self.user_hp)
-                self.user_hp -= damage
+                damage = score
+                self.user_hp += damage
                 result_msg = f"😵 You take {damage} damage!"
             else:
                 result_msg = "⚡ No damage dealt!"
@@ -230,7 +319,7 @@ Boss HP: {max(0, self.boss_hp)}/{self.MAX_HP} | Your HP: {max(0, self.user_hp)}/
         except Exception as e:
             return f"Error evaluating answer: {e}"
 
-    def _advance_level(self):
+    def _advance_level(self) -> None:
         """Advance to next level or complete game."""
         if self.level < self.MAX_LEVEL:
             self.level += 1
@@ -247,8 +336,10 @@ Boss HP: {max(0, self.boss_hp)}/{self.MAX_HP} | Your HP: {max(0, self.user_hp)}/
             self.game_over = True
             print("🏆 VICTORY! You've become a Staff Software Engineer!")
 
+    # ==================== STATUS AND INFO METHODS ====================
+
     def get_status(self) -> str:
-        """Get current game status."""
+        """Get current game status as formatted string."""
         boss_info = self.get_boss_info()
         return f"""📊 GAME STATUS 📊
 Level: {self.level}/{self.MAX_LEVEL}
@@ -293,6 +384,8 @@ Turn: {self.turn_count}"""
         return self.get_boss_info()
 
 
+# ==================== EXAMPLE USAGE ====================
+
 def main():
     """Example main game loop - can be used for testing."""
     try:
@@ -309,6 +402,8 @@ def main():
         while True:
             user_answer = input("\nEnter your answer: ")
             response = game.submit_answer(user_answer)
+            response = response.split("</END_SCORE>")
+            response = response[1]
             print(response)
             
             if game.game_over:
