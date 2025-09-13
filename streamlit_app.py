@@ -71,7 +71,7 @@ st.markdown("""
     }
     
     .boss-card {
-        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        background: #ff6b6b;
         color: white;
         padding: 2rem;
         border-radius: 20px;
@@ -81,7 +81,7 @@ st.markdown("""
     }
     
     .player-card {
-        background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+        background: #4ecdc4;
         color: white;
         padding: 2rem;
         border-radius: 20px;
@@ -106,11 +106,11 @@ st.markdown("""
     }
     
     .hp-boss {
-        background: linear-gradient(90deg, #ff6b6b, #ee5a24);
+        background: #e74c3c;
     }
     
     .hp-player {
-        background: linear-gradient(90deg, #4ecdc4, #44a08d);
+        background: #27ae60;
     }
     
     /* Question box */
@@ -357,44 +357,43 @@ def make_api_request(endpoint: str, method: str = "GET", data: Optional[Dict] = 
         st.info("Make sure the backend is running with: `uv run uvicorn src.app.app:app --reload`")
         return None
 
-def render_hp_bar(current_hp: int, max_hp: int, is_boss: bool = False) -> str:
-    """Render HP bar as HTML."""
-    percentage = (current_hp / max_hp) * 100 if max_hp > 0 else 0
-    bar_class = "hp-boss" if is_boss else "hp-player"
-    
-    return f"""
-    <div class="hp-bar">
-        <div class="hp-fill {bar_class}" style="width: {percentage}%"></div>
-    </div>
-    <div style="text-align: center; margin-top: 0.5rem; font-weight: bold;">
-        {current_hp}/{max_hp} HP ({percentage:.1f}%)
-    </div>
-    """
-
 def render_game_status(game_state: Dict[str, Any]):
-    """Render the current game status with beautiful cards."""
+    """Render the current game status with two cards (no helper function)."""
     col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown(f"""
-        <div class="boss-card">
-            <h2>👹 {game_state.get('boss_name', 'Unknown Boss')}</h2>
-            <p><strong>Level:</strong> {game_state.get('level', 1)}/{game_state.get('max_level', 3)}</p>
-            <p><strong>Personality:</strong> {game_state.get('boss_personality', 'Mysterious')}</p>
-            <p><strong>Question Types:</strong> {', '.join(game_state.get('boss_question_types', []))}</p>
-            {render_hp_bar(game_state.get('boss_hp', 0), game_state.get('max_hp', 100), True)}
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown(f"""
-        <div class="player-card">
-            <h2>🛡️ You</h2>
-            <p><strong>Turn:</strong> {game_state.get('turn_count', 0)}</p>
-            <p><strong>Conversation Length:</strong> {game_state.get('conversation_length', 0)}</p>
-            {render_hp_bar(game_state.get('user_hp', 100), 100, False)}
-        </div>
-        """, unsafe_allow_html=True)
+
+    boss_percentage = (game_state.get("boss_hp", 0) / game_state.get("max_hp", 100)) * 100
+    user_percentage = (game_state.get("user_hp", 0) / game_state.get("user_hp", 100)) * 100
+
+    # Boss card
+    col1.markdown(f"""
+<div class="boss-card">
+  <h2>👹 {game_state.get('boss_name', 'Unknown Boss')}</h2>
+  <p><strong>Level:</strong> {game_state.get('level', 1)}/{game_state.get('max_level', 3)}</p>
+
+  <div class="hp-bar">
+    <div class="hp-fill hp-boss" style="width:{boss_percentage}%"></div>
+  </div>
+  <div class="hp-text" style="text-align:center; margin-top:0.5rem; font-weight:bold;">
+    {game_state.get('boss_hp', 0)}/{game_state.get('max_hp', 100)} HP ({boss_percentage:.1f}%)
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+    # Player card
+    col2.markdown(f"""
+<div class="player-card">
+  <h2>🛡️ You</h2>
+  <p><strong>Turn:</strong> {game_state.get('turn_count', 0)}</p>
+
+  <div class="hp-bar">
+    <div class="hp-fill hp-player" style="width:{user_percentage}%"></div>
+  </div>
+  <div class="hp-text" style="text-align:center; margin-top:0.5rem; font-weight:bold;">
+    {game_state.get('user_hp', 0)}/{game_state.get('user_hp', 100)} HP ({user_percentage:.1f}%)
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
 
 def render_progress_chart(game_state: Dict[str, Any]):
     """Render progress visualization."""

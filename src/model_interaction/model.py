@@ -23,7 +23,7 @@ class InterviewBossGame:
     # ==================== GAME CONFIGURATION ====================
     
     MAX_LEVEL = 3
-    MAX_HP = 30
+    MAX_HP = 1
     SCORE_RANGE = (-10, 10)
     
     # ==================== BOSS DEFINITIONS ====================
@@ -291,10 +291,12 @@ Now evaluate this answer and respond as {boss_info['name']}. Remember:
             if score > 0:
                 damage = score
                 self.boss_hp -= damage
+                self.boss_hp = max(0, self.boss_hp)  # Ensure HP doesn't go below 0
                 result_msg = f"💥 Boss takes {damage} damage!"
             elif score < 0:
-                damage = score
-                self.user_hp += damage
+                damage = abs(score)  # Make damage positive for clarity
+                self.user_hp -= damage  # Subtract damage from user HP
+                self.user_hp = max(0, self.user_hp)  # Ensure HP doesn't go below 0
                 result_msg = f"😵 You take {damage} damage!"
             else:
                 result_msg = "⚡ No damage dealt!"
@@ -309,7 +311,9 @@ Now evaluate this answer and respond as {boss_info['name']}. Remember:
                     status_msg = "\n🎯 Boss defeated! Moving to next level..."
             elif self.user_hp <= 0:
                 self.reset_game()
-                status_msg = "\n💀 You were defeated! Game restarted..."
+                # Automatically start a new game after defeat
+                self.start_new_game()
+                status_msg = "\n💀 You were defeated! New game started..."
 
             return f"""<score>{score:+d}</score>
 {feedback}
