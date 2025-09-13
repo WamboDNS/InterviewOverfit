@@ -112,6 +112,7 @@ class AnswerResponse(BaseModel):
     success: bool
     score: int
     feedback: str
+    next_question: str
     game_state: GameStateResponse
     error: Optional[str] = None
 
@@ -302,6 +303,7 @@ def submit_answer(
             success=False,
             score=0,
             feedback="No active game found",
+            next_question="",
             game_state=GameStateResponse(
                 level=1, max_level=3, boss_name="", boss_personality="", 
                 boss_question_types=[], boss_hp=0, max_hp=100, user_hp=0, 
@@ -318,21 +320,42 @@ def submit_answer(
         response = game.submit_answer(payload.answer)
         game_state = game.get_game_state()
         
-        # Parse the response to extract score and feedback
+        # Parse the XML-structured response
         score = 0
-        feedback = response
+        feedback = ""
+        next_question = ""
         
         try:
-            # Try to extract score from response
+            # Extract score
             score_match = re.search(r'<score>\s*([+-]?\d+)\s*</score>', response)
             if score_match:
                 score = int(score_match.group(1))
                 # Clamp the score to the allowed range [-10, 10]
                 score = max(-10, min(10, score))
-                # Remove score tags from feedback
-                feedback = re.sub(r'<score>\s*[+-]?\d+\s*</score>', '', response).strip()
-        except:
-            pass
+                print(f"Extracted score: {score}")
+            else:
+                print(f"No score found in response: {response[:200]}...")
+            
+            # Extract feedback
+            feedback_match = re.search(r'<feedback>\s*(.*?)\s*</feedback>', response, re.DOTALL)
+            if feedback_match:
+                feedback = feedback_match.group(1).strip()
+                print(f"Extracted feedback: {feedback[:100]}...")
+            else:
+                print(f"No feedback found in response: {response[:200]}...")
+            
+            # Extract next question
+            question_match = re.search(r'<question>\s*(.*?)\s*</question>', response, re.DOTALL)
+            if question_match:
+                next_question = question_match.group(1).strip()
+                print(f"Extracted question: {next_question[:100]}...")
+            else:
+                print(f"No question found in response: {response[:200]}...")
+            
+        except Exception as e:
+            # Fallback to old parsing if XML parsing fails
+            feedback = response
+            print(f"XML parsing failed: {e}")
         
         # If game is over, clean up the instance
         if game.game_over:
@@ -342,6 +365,7 @@ def submit_answer(
             success=True,
             score=score,
             feedback=feedback,
+            next_question=next_question,
             game_state=GameStateResponse(**game_state)
         )
     except Exception as e:
@@ -349,6 +373,7 @@ def submit_answer(
             success=False,
             score=0,
             feedback="",
+            next_question="",
             game_state=GameStateResponse(
                 level=1, max_level=3, boss_name="", boss_personality="", 
                 boss_question_types=[], boss_hp=0, max_hp=100, user_hp=0, 

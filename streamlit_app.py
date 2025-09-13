@@ -16,7 +16,7 @@ from plotly.subplots import make_subplots
 
 # Page configuration
 st.set_page_config(
-    page_title="Interview Boss Battle",
+    page_title="InterviewOverfit",
     page_icon="🎮",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -211,6 +211,102 @@ st.markdown("""
         animation: pulse 2s infinite;
     }
     
+    /* Chat message styling */
+    .chat-container {
+        max-height: 500px;
+        overflow-y: auto;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 15px;
+        margin: 1rem 0;
+        border: 2px solid #dee2e6;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .chat-message {
+        margin: 1rem 0;
+        padding: 1.2rem;
+        border-radius: 20px;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+        position: relative;
+        max-width: 80%;
+        word-wrap: break-word;
+    }
+    
+    .chat-message.boss {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        color: white;
+        margin-right: 20%;
+        margin-left: 0;
+    }
+    
+    .chat-message.user {
+        background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+        color: white;
+        margin-left: 20%;
+        margin-right: 0;
+        margin-left: auto;
+    }
+    
+    .chat-message.feedback {
+        margin-right: 20%;
+        margin-left: 0;
+    }
+    
+    .chat-message.feedback.positive {
+        background: linear-gradient(135deg, #96ceb4 0%, #85c1a3 100%);
+        color: white;
+    }
+    
+    .chat-message.feedback.negative {
+        background: linear-gradient(135deg, #ff9ff3 0%, #f368e0 100%);
+        color: white;
+    }
+    
+    .chat-message.feedback.neutral {
+        background: linear-gradient(135deg, #feca57 0%, #ff9f43 100%);
+        color: white;
+    }
+    
+    .message-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    
+    .timestamp {
+        font-size: 0.8rem;
+        opacity: 0.7;
+    }
+    
+    .message-content {
+        font-size: 1rem;
+        line-height: 1.5;
+        white-space: pre-wrap;
+    }
+    
+    /* Chat scrollbar styling */
+    .chat-container::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .chat-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    
+    .chat-container::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 10px;
+    }
+    
+    .chat-container::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+    
     /* Hide Streamlit branding */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
@@ -231,6 +327,10 @@ if 'user_id' not in st.session_state:
     st.session_state.user_id = DEFAULT_USER_ID
 if 'api_key' not in st.session_state:
     st.session_state.api_key = ""
+if 'current_answer' not in st.session_state:
+    st.session_state.current_answer = ""
+if 'chat_messages' not in st.session_state:
+    st.session_state.chat_messages = []
 
 def make_api_request(endpoint: str, method: str = "GET", data: Optional[Dict] = None) -> Optional[Dict]:
     """Make API request to backend with error handling."""
@@ -362,6 +462,78 @@ def render_feedback(score: int, feedback: str):
     </div>
     """, unsafe_allow_html=True)
 
+def add_chat_message(role: str, content: str, score: int = None):
+    """Add a message to the chat history."""
+    message = {
+        "role": role,
+        "content": content,
+        "timestamp": datetime.now().strftime("%H:%M:%S"),
+        "score": score
+    }
+    st.session_state.chat_messages.append(message)
+
+def render_conversation_history():
+    """Render the conversation history with color-coded messages."""
+    if not st.session_state.chat_messages:
+        st.info("No conversation yet. Start the game to begin!")
+        return
+    
+    # Create a chat container
+    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+    
+    for message in st.session_state.chat_messages:
+        role = message["role"]
+        content = message["content"]
+        timestamp = message["timestamp"]
+        score = message.get("score")
+        
+        if role == "boss":
+            st.markdown(f"""
+            <div class="chat-message boss">
+                <div class="message-header">
+                    <strong>👹 Boss</strong>
+                    <span class="timestamp">{timestamp}</span>
+                </div>
+                <div class="message-content">{content}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        elif role == "user":
+            st.markdown(f"""
+            <div class="chat-message user">
+                <div class="message-header">
+                    <strong>🛡️ You</strong>
+                    <span class="timestamp">{timestamp}</span>
+                </div>
+                <div class="message-content">{content}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        elif role == "feedback":
+            if score and score > 0:
+                feedback_class = "positive"
+                emoji = "✅"
+            elif score and score < 0:
+                feedback_class = "negative"
+                emoji = "❌"
+            else:
+                feedback_class = "neutral"
+                emoji = "⚖️"
+            
+            st.markdown(f"""
+            <div class="chat-message feedback {feedback_class}">
+                <div class="message-header">
+                    <strong>{emoji} Feedback</strong>
+                    <span class="timestamp">{timestamp}</span>
+                </div>
+                <div class="message-content">
+                    {f"<strong>Score: {score:+d}</strong><br>" if score is not None else ""}
+                    {content}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+
+
 def main():
     """Main application function."""
     
@@ -399,6 +571,13 @@ def main():
                     result = make_api_request(f"/game/{user_id}/start", "POST", data)
                     if result and result.get('success'):
                         st.session_state.game_state = result.get('game_state')
+                        st.session_state.chat_messages = []  # Clear chat history
+                        
+                        # Add initial boss message
+                        first_question = result.get('game_state', {}).get('current_question', '')
+                        if first_question:
+                            add_chat_message("boss", first_question)
+                        
                         st.success("Game started!")
                         st.rerun()
                     else:
@@ -410,6 +589,13 @@ def main():
                     result = make_api_request(f"/game/{user_id}/reset", "POST")
                     if result and result.get('success'):
                         st.session_state.game_state = result.get('game_state')
+                        st.session_state.chat_messages = []  # Clear chat history
+                        
+                        # Add initial boss message
+                        first_question = result.get('game_state', {}).get('current_question', '')
+                        if first_question:
+                            add_chat_message("boss", first_question)
+                        
                         st.success("Game reset!")
                         st.rerun()
                     else:
@@ -421,6 +607,7 @@ def main():
                 if result and result.get('success'):
                     st.session_state.game_state = None
                     st.session_state.conversation_history = []
+                    st.session_state.chat_messages = []
                     st.success("Game ended!")
                     st.rerun()
                 else:
@@ -470,66 +657,65 @@ def main():
         # Progress visualization
         render_progress_chart(game_state)
         
-        # Current question
+        # Chat conversation area
+        st.markdown("### 💬 Interview Conversation")
+        render_conversation_history()
+        
+        # Answer input (only show if game is active and not over)
         if not game_state.get('game_over', False):
-            current_question = game_state.get('current_question', '')
-            if current_question:
-                st.markdown(f"""
-                <div class="question-box">
-                    <h3>❓ Boss Question</h3>
-                    <p style="font-size: 1.2rem; line-height: 1.6;">{current_question}</p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # Answer input
-                answer = st.text_area(
-                    "Your Answer:",
-                    height=150,
-                    placeholder="Type your answer here...",
-                    help="Provide a thoughtful, detailed answer to the boss's question"
-                )
-                
-                col1, col2, col3 = st.columns([1, 1, 1])
-                with col2:
-                    if st.button("⚔️ Submit Answer", use_container_width=True, type="primary"):
-                        if answer.strip():
-                            with st.spinner("Submitting answer..."):
-                                result = make_api_request(
-                                    f"/game/{user_id}/answer", 
-                                    "POST", 
-                                    {"answer": answer}
-                                )
-                                if result and result.get('success'):
-                                    # Show feedback
-                                    score = result.get('score', 0)
-                                    feedback = result.get('feedback', '')
-                                    render_feedback(score, feedback)
-                                    
-                                    # Update game state
-                                    st.session_state.game_state = result.get('game_state')
-                                    
-                                    # Get next question if game continues
-                                    if not result.get('game_state', {}).get('game_over', False):
-                                        time.sleep(1)  # Brief pause for dramatic effect
-                                        next_result = make_api_request(f"/game/{user_id}/question")
-                                        if next_result and next_result.get('success'):
-                                            st.session_state.game_state = next_result.get('game_state')
-                                    
-                                    st.rerun()
-                                else:
-                                    st.error("Failed to submit answer")
-                        else:
-                            st.warning("Please enter an answer before submitting")
-            else:
-                # Get next question
-                if st.button("❓ Get Next Question"):
-                    with st.spinner("Getting next question..."):
-                        result = make_api_request(f"/game/{user_id}/question")
-                        if result and result.get('success'):
-                            st.session_state.game_state = result.get('game_state')
-                            st.rerun()
-                        else:
-                            st.error("Failed to get next question")
+            st.markdown("### ✍️ Your Answer")
+            answer = st.text_area(
+                "Type your answer here:",
+                height=150,
+                placeholder="Provide a thoughtful, detailed answer to the boss's question...",
+                help="Answer the most recent question from the boss",
+                value=st.session_state.current_answer
+            )
+            
+            # Update session state when user types
+            if answer != st.session_state.current_answer:
+                st.session_state.current_answer = answer
+            
+            col1, col2, col3 = st.columns([1, 1, 1])
+            with col2:
+                if st.button("⚔️ Submit Answer", use_container_width=True, type="primary"):
+                    if answer.strip():
+                        with st.spinner("Submitting answer..."):
+                            # Add user message to history
+                            add_chat_message("user", answer)
+                            
+                            result = make_api_request(
+                                f"/game/{user_id}/answer", 
+                                "POST", 
+                                {"answer": answer}
+                            )
+                            if result and result.get('success'):
+                                # Get feedback, score, and next question from the structured response
+                                score = result.get('score', 0)
+                                feedback = result.get('feedback', '')
+                                next_question = result.get('next_question', '')
+                                
+                                # Add feedback to history
+                                add_chat_message("feedback", feedback, score)
+                                
+                                # Show feedback
+                                render_feedback(score, feedback)
+                                
+                                # Update game state
+                                st.session_state.game_state = result.get('game_state')
+                                
+                                # Add next question to history if game continues
+                                if not result.get('game_state', {}).get('game_over', False) and next_question:
+                                    add_chat_message("boss", next_question)
+                                
+                                # Clear the answer field for the next question
+                                st.session_state.current_answer = ""
+                                
+                                st.rerun()
+                            else:
+                                st.error("Failed to submit answer")
+                    else:
+                        st.warning("Please enter an answer before submitting")
         else:
             # Game over
             if game_state.get('victory', False):
@@ -549,21 +735,6 @@ def main():
                 </div>
                 """, unsafe_allow_html=True)
         
-        # Conversation history
-        if st.checkbox("📜 Show Conversation History"):
-            result = make_api_request(f"/game/{user_id}/history")
-            if result and result.get('conversation_history'):
-                history = result['conversation_history']
-                st.markdown("### 💬 Conversation History")
-                
-                for i, message in enumerate(history):
-                    if message.get('role') == 'user':
-                        st.markdown(f"**You:** {message.get('content', '')}")
-                    else:
-                        st.markdown(f"**Boss:** {message.get('content', '')}")
-                    
-                    if i < len(history) - 1:
-                        st.markdown("---")
         
         # Game statistics
         with st.expander("📊 Game Statistics"):
