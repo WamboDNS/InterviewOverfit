@@ -1,0 +1,584 @@
+#!/usr/bin/env python3
+"""
+Interview Boss Battle - Modern Streamlit Frontend
+A gamified interview preparation system with beautiful UI
+"""
+
+import streamlit as st
+import requests
+import json
+import time
+from datetime import datetime
+from typing import Dict, Any, Optional
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
+# Page configuration
+st.set_page_config(
+    page_title="Interview Boss Battle",
+    page_icon="🎮",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Custom CSS for modern styling
+st.markdown("""
+<style>
+    /* Main theme colors */
+    :root {
+        --primary-color: #ff6b6b;
+        --secondary-color: #4ecdc4;
+        --accent-color: #45b7d1;
+        --success-color: #96ceb4;
+        --warning-color: #feca57;
+        --danger-color: #ff9ff3;
+        --dark-color: #2c3e50;
+        --light-color: #ecf0f1;
+    }
+    
+    /* Custom header styling */
+    .main-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 2rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    
+    .main-header h1 {
+        color: white;
+        font-size: 3rem;
+        margin: 0;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .main-header p {
+        color: rgba(255,255,255,0.9);
+        font-size: 1.2rem;
+        margin: 0.5rem 0 0 0;
+    }
+    
+    /* Game status cards */
+    .status-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        margin: 1rem 0;
+        border-left: 5px solid var(--primary-color);
+    }
+    
+    .boss-card {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 20px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(255,107,107,0.3);
+        margin: 1rem 0;
+    }
+    
+    .player-card {
+        background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 20px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(78,205,196,0.3);
+        margin: 1rem 0;
+    }
+    
+    /* HP bars */
+    .hp-bar {
+        background: #e0e0e0;
+        border-radius: 10px;
+        overflow: hidden;
+        height: 20px;
+        margin: 0.5rem 0;
+    }
+    
+    .hp-fill {
+        height: 100%;
+        border-radius: 10px;
+        transition: width 0.5s ease;
+    }
+    
+    .hp-boss {
+        background: linear-gradient(90deg, #ff6b6b, #ee5a24);
+    }
+    
+    .hp-player {
+        background: linear-gradient(90deg, #4ecdc4, #44a08d);
+    }
+    
+    /* Question box */
+    .question-box {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 20px;
+        margin: 2rem 0;
+        box-shadow: 0 10px 30px rgba(102,126,234,0.3);
+    }
+    
+    .question-box h3 {
+        color: white;
+        margin-bottom: 1rem;
+    }
+    
+    /* Answer input */
+    .answer-input {
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 15px;
+        padding: 1rem;
+        font-size: 1.1rem;
+        transition: border-color 0.3s ease;
+    }
+    
+    .answer-input:focus {
+        border-color: var(--primary-color);
+        outline: none;
+    }
+    
+    /* Buttons */
+    .stButton > button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 25px;
+        padding: 0.75rem 2rem;
+        font-size: 1.1rem;
+        font-weight: bold;
+        transition: transform 0.2s ease;
+        box-shadow: 0 5px 15px rgba(102,126,234,0.3);
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102,126,234,0.4);
+    }
+    
+    /* Sidebar styling */
+    .css-1d391kg {
+        background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+    }
+    
+    /* Progress indicators */
+    .progress-container {
+        background: white;
+        padding: 1rem;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        margin: 1rem 0;
+    }
+    
+    /* Feedback styling */
+    .feedback-positive {
+        background: linear-gradient(135deg, #96ceb4 0%, #85c1a3 100%);
+        color: white;
+        padding: 1rem;
+        border-radius: 15px;
+        margin: 1rem 0;
+    }
+    
+    .feedback-negative {
+        background: linear-gradient(135deg, #ff9ff3 0%, #f368e0 100%);
+        color: white;
+        padding: 1rem;
+        border-radius: 15px;
+        margin: 1rem 0;
+    }
+    
+    .feedback-neutral {
+        background: linear-gradient(135deg, #feca57 0%, #ff9f43 100%);
+        color: white;
+        padding: 1rem;
+        border-radius: 15px;
+        margin: 1rem 0;
+    }
+    
+    /* Animations */
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    
+    .pulse {
+        animation: pulse 2s infinite;
+    }
+    
+    /* Hide Streamlit branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+</style>
+""", unsafe_allow_html=True)
+
+# Configuration
+BACKEND_URL = "http://localhost:8000"
+DEFAULT_USER_ID = "demo-user"
+
+# Initialize session state
+if 'game_state' not in st.session_state:
+    st.session_state.game_state = None
+if 'conversation_history' not in st.session_state:
+    st.session_state.conversation_history = []
+if 'user_id' not in st.session_state:
+    st.session_state.user_id = DEFAULT_USER_ID
+if 'api_key' not in st.session_state:
+    st.session_state.api_key = ""
+
+def make_api_request(endpoint: str, method: str = "GET", data: Optional[Dict] = None) -> Optional[Dict]:
+    """Make API request to backend with error handling."""
+    try:
+        url = f"{BACKEND_URL}{endpoint}"
+        if method == "GET":
+            response = requests.get(url, timeout=10)
+        elif method == "POST":
+            response = requests.post(url, json=data, timeout=10)
+        elif method == "DELETE":
+            response = requests.delete(url, timeout=10)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            st.error(f"API Error: {response.status_code} - {response.text}")
+            return None
+    except requests.exceptions.RequestException as e:
+        st.error(f"Connection Error: Could not connect to backend at {BACKEND_URL}")
+        st.info("Make sure the backend is running with: `uv run uvicorn src.app.app:app --reload`")
+        return None
+
+def render_hp_bar(current_hp: int, max_hp: int, is_boss: bool = False) -> str:
+    """Render HP bar as HTML."""
+    percentage = (current_hp / max_hp) * 100 if max_hp > 0 else 0
+    bar_class = "hp-boss" if is_boss else "hp-player"
+    
+    return f"""
+    <div class="hp-bar">
+        <div class="hp-fill {bar_class}" style="width: {percentage}%"></div>
+    </div>
+    <div style="text-align: center; margin-top: 0.5rem; font-weight: bold;">
+        {current_hp}/{max_hp} HP ({percentage:.1f}%)
+    </div>
+    """
+
+def render_game_status(game_state: Dict[str, Any]):
+    """Render the current game status with beautiful cards."""
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown(f"""
+        <div class="boss-card">
+            <h2>👹 {game_state.get('boss_name', 'Unknown Boss')}</h2>
+            <p><strong>Level:</strong> {game_state.get('level', 1)}/{game_state.get('max_level', 3)}</p>
+            <p><strong>Personality:</strong> {game_state.get('boss_personality', 'Mysterious')}</p>
+            <p><strong>Question Types:</strong> {', '.join(game_state.get('boss_question_types', []))}</p>
+            {render_hp_bar(game_state.get('boss_hp', 0), game_state.get('max_hp', 100), True)}
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"""
+        <div class="player-card">
+            <h2>🛡️ You</h2>
+            <p><strong>Turn:</strong> {game_state.get('turn_count', 0)}</p>
+            <p><strong>Conversation Length:</strong> {game_state.get('conversation_length', 0)}</p>
+            {render_hp_bar(game_state.get('user_hp', 100), 100, False)}
+        </div>
+        """, unsafe_allow_html=True)
+
+def render_progress_chart(game_state: Dict[str, Any]):
+    """Render progress visualization."""
+    if not game_state:
+        return
+    
+    # Create progress indicators
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("""
+        <div class="progress-container">
+            <h4>🎯 Level Progress</h4>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        level = game_state.get('level', 1)
+        max_level = game_state.get('max_level', 3)
+        progress = level / max_level
+        
+        st.progress(progress)
+        st.metric("Current Level", f"{level}/{max_level}")
+    
+    with col2:
+        st.markdown("""
+        <div class="progress-container">
+            <h4>💬 Conversation</h4>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        conv_length = game_state.get('conversation_length', 0)
+        st.metric("Messages", conv_length)
+        st.metric("Turn Count", game_state.get('turn_count', 0))
+    
+    with col3:
+        st.markdown("""
+        <div class="progress-container">
+            <h4>⚔️ Battle Status</h4>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        boss_hp = game_state.get('boss_hp', 100)
+        user_hp = game_state.get('user_hp', 100)
+        
+        if game_state.get('game_over', False):
+            if game_state.get('victory', False):
+                st.success("🎉 Victory!")
+            else:
+                st.error("💀 Defeat!")
+        else:
+            st.info("⚔️ Battle in Progress")
+
+def render_feedback(score: int, feedback: str):
+    """Render feedback with appropriate styling."""
+    if score > 0:
+        feedback_class = "feedback-positive"
+        emoji = "✅"
+    elif score < 0:
+        feedback_class = "feedback-negative"
+        emoji = "❌"
+    else:
+        feedback_class = "feedback-neutral"
+        emoji = "⚖️"
+    
+    st.markdown(f"""
+    <div class="{feedback_class}">
+        <h4>{emoji} Score: {score:+d}</h4>
+        <p>{feedback}</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+def main():
+    """Main application function."""
+    
+    # Header
+    st.markdown("""
+    <div class="main-header">
+        <h1>🎮 Interview Boss Battle</h1>
+        <p>Level up your interview skills by defeating challenging boss interviews!</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Sidebar for configuration
+    with st.sidebar:
+        st.markdown("## ⚙️ Configuration")
+        
+        # User ID input
+        user_id = st.text_input("User ID", value=st.session_state.user_id, help="Your unique user identifier")
+        st.session_state.user_id = user_id
+        
+        # API Key input (optional)
+        api_key = st.text_input("API Key (Optional)", value=st.session_state.api_key, type="password", 
+                               help="Optional API key for enhanced features")
+        st.session_state.api_key = api_key
+        
+        st.markdown("---")
+        
+        # Game controls
+        st.markdown("## 🎮 Game Controls")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🚀 Start Game", use_container_width=True):
+                with st.spinner("Starting new game..."):
+                    data = {"api_key": api_key} if api_key else {}
+                    result = make_api_request(f"/game/{user_id}/start", "POST", data)
+                    if result and result.get('success'):
+                        st.session_state.game_state = result.get('game_state')
+                        st.success("Game started!")
+                        st.rerun()
+                    else:
+                        st.error("Failed to start game")
+        
+        with col2:
+            if st.button("🔄 Reset Game", use_container_width=True):
+                with st.spinner("Resetting game..."):
+                    result = make_api_request(f"/game/{user_id}/reset", "POST")
+                    if result and result.get('success'):
+                        st.session_state.game_state = result.get('game_state')
+                        st.success("Game reset!")
+                        st.rerun()
+                    else:
+                        st.error("Failed to reset game")
+        
+        if st.button("🗑️ End Game", use_container_width=True):
+            with st.spinner("Ending game..."):
+                result = make_api_request(f"/game/{user_id}", "DELETE")
+                if result and result.get('success'):
+                    st.session_state.game_state = None
+                    st.session_state.conversation_history = []
+                    st.success("Game ended!")
+                    st.rerun()
+                else:
+                    st.error("Failed to end game")
+        
+        st.markdown("---")
+        
+        # Backend status
+        st.markdown("## 🔗 Backend Status")
+        if st.button("Check Connection"):
+            result = make_api_request("/health")
+            if result:
+                st.success("✅ Backend Connected")
+            else:
+                st.error("❌ Backend Disconnected")
+    
+    # Main content area
+    if not st.session_state.game_state:
+        # Welcome screen
+        st.markdown("""
+        <div class="status-card">
+            <h2>🎯 Welcome to Interview Boss Battle!</h2>
+            <p>This gamified interview preparation system will help you practice with AI-powered interview bosses.</p>
+            <p><strong>How to play:</strong></p>
+            <ul>
+                <li>Click "Start Game" to begin your interview battle</li>
+                <li>Answer questions from the interview boss</li>
+                <li>Get scored on your responses</li>
+                <li>Defeat bosses to level up!</li>
+            </ul>
+            <p>Make sure your backend is running before starting a game.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Show API info
+        if st.button("📋 Show API Information"):
+            result = make_api_request("/api/info")
+            if result:
+                st.json(result)
+    else:
+        # Game is active
+        game_state = st.session_state.game_state
+        
+        # Render game status
+        render_game_status(game_state)
+        
+        # Progress visualization
+        render_progress_chart(game_state)
+        
+        # Current question
+        if not game_state.get('game_over', False):
+            current_question = game_state.get('current_question', '')
+            if current_question:
+                st.markdown(f"""
+                <div class="question-box">
+                    <h3>❓ Boss Question</h3>
+                    <p style="font-size: 1.2rem; line-height: 1.6;">{current_question}</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Answer input
+                answer = st.text_area(
+                    "Your Answer:",
+                    height=150,
+                    placeholder="Type your answer here...",
+                    help="Provide a thoughtful, detailed answer to the boss's question"
+                )
+                
+                col1, col2, col3 = st.columns([1, 1, 1])
+                with col2:
+                    if st.button("⚔️ Submit Answer", use_container_width=True, type="primary"):
+                        if answer.strip():
+                            with st.spinner("Submitting answer..."):
+                                result = make_api_request(
+                                    f"/game/{user_id}/answer", 
+                                    "POST", 
+                                    {"answer": answer}
+                                )
+                                if result and result.get('success'):
+                                    # Show feedback
+                                    score = result.get('score', 0)
+                                    feedback = result.get('feedback', '')
+                                    render_feedback(score, feedback)
+                                    
+                                    # Update game state
+                                    st.session_state.game_state = result.get('game_state')
+                                    
+                                    # Get next question if game continues
+                                    if not result.get('game_state', {}).get('game_over', False):
+                                        time.sleep(1)  # Brief pause for dramatic effect
+                                        next_result = make_api_request(f"/game/{user_id}/question")
+                                        if next_result and next_result.get('success'):
+                                            st.session_state.game_state = next_result.get('game_state')
+                                    
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to submit answer")
+                        else:
+                            st.warning("Please enter an answer before submitting")
+            else:
+                # Get next question
+                if st.button("❓ Get Next Question"):
+                    with st.spinner("Getting next question..."):
+                        result = make_api_request(f"/game/{user_id}/question")
+                        if result and result.get('success'):
+                            st.session_state.game_state = result.get('game_state')
+                            st.rerun()
+                        else:
+                            st.error("Failed to get next question")
+        else:
+            # Game over
+            if game_state.get('victory', False):
+                st.markdown("""
+                <div class="feedback-positive" style="text-align: center; padding: 3rem;">
+                    <h1>🎉 VICTORY! 🎉</h1>
+                    <h2>You defeated the interview boss!</h2>
+                    <p>Congratulations on completing the interview challenge!</p>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown("""
+                <div class="feedback-negative" style="text-align: center; padding: 3rem;">
+                    <h1>💀 DEFEAT 💀</h1>
+                    <h2>The interview boss was too strong!</h2>
+                    <p>Don't give up! Try again to improve your interview skills.</p>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        # Conversation history
+        if st.checkbox("📜 Show Conversation History"):
+            result = make_api_request(f"/game/{user_id}/history")
+            if result and result.get('conversation_history'):
+                history = result['conversation_history']
+                st.markdown("### 💬 Conversation History")
+                
+                for i, message in enumerate(history):
+                    if message.get('role') == 'user':
+                        st.markdown(f"**You:** {message.get('content', '')}")
+                    else:
+                        st.markdown(f"**Boss:** {message.get('content', '')}")
+                    
+                    if i < len(history) - 1:
+                        st.markdown("---")
+        
+        # Game statistics
+        with st.expander("📊 Game Statistics"):
+            if game_state:
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.metric("Current Level", game_state.get('level', 1))
+                    st.metric("Boss HP", game_state.get('boss_hp', 0))
+                    st.metric("Your HP", game_state.get('user_hp', 100))
+                
+                with col2:
+                    st.metric("Turn Count", game_state.get('turn_count', 0))
+                    st.metric("Conversation Length", game_state.get('conversation_length', 0))
+                    st.metric("Max Level", game_state.get('max_level', 3))
+
+if __name__ == "__main__":
+    main()
