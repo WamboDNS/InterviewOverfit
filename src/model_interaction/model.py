@@ -71,7 +71,7 @@ GAME RULES:
 - Each level has a unique boss with different personality and question difficulty
 - After each user answer, you MUST respond in this exact format:
 
-First Line: <score> SCORE </score> where SCORE from -10 to +10 (e.g., "+7" or "-3")
+First Line: <score> SCORE </score> where SCORE from -10 to +10 (e.g., "+7" or "-3"), only print the value, no text
 After that: <feedback> FEEDBACK </feedback>
 then: <question> QUESTION </question>
 The XML Formatting is important. Do not remove it.
@@ -173,6 +173,7 @@ You are currently {boss_info['name']}. Ask an appropriate interview question for
             # Clamp the score to the allowed range [-10, 10]
             score = max(-10, min(10, score))
             feedback = '\n'.join(lines[1:]).strip() if len(lines) > 1 else "No feedback provided."
+            print("HOOOOO bin drin")
             return score, feedback
         
         return 0, response
@@ -286,7 +287,7 @@ Now evaluate this answer and respond as {boss_info['name']}. Remember:
             response = self._make_api_call(evaluation_prompt, max_tokens=1024)
             
             score, feedback = self._parse_score(response)
-
+            
             # Update HP based on score
             if score > 0:
                 damage = score
@@ -311,12 +312,10 @@ Now evaluate this answer and respond as {boss_info['name']}. Remember:
                 self.reset_game()
                 status_msg = "\n💀 You were defeated! Game restarted..."
 
-            return f"""SCORE: {score:+d}
-
-{feedback}
-
-{result_msg}
-Boss HP: {max(0, self.boss_hp)}/{self.MAX_HP} | Your HP: {max(0, self.user_hp)}/{self.MAX_HP}{status_msg}"""
+            return f"""<score>{score:+d}</score>
+        {feedback}
+        {result_msg}
+        Boss HP: {max(0, self.boss_hp)}/{self.MAX_HP} | Your HP: {max(0, self.user_hp)}/{self.MAX_HP}{status_msg}"""
 
         except Exception as e:
             return f"Error evaluating answer: {e}"

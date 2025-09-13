@@ -318,6 +318,7 @@ def submit_answer(
         
         # Submit answer and get response
         response = game.submit_answer(payload.answer)
+        print(f"payload.answer: {payload.answer}")
         game_state = game.get_game_state()
         
         # Parse the XML-structured response
@@ -327,6 +328,7 @@ def submit_answer(
         
         try:
             # Extract score
+            print(f"Response: {response}")
             score_match = re.search(r'<score>\s*([+-]?\d+)\s*</score>', response)
             if score_match:
                 score = int(score_match.group(1))
