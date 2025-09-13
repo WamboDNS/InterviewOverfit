@@ -72,7 +72,8 @@ GAME RULES:
 - After each user answer, you MUST respond in this exact format:
 
 First Line: <score> SCORE </score> where SCORE from -10 to +10 (e.g., "+7" or "-3")
-After that: </END_SCORE>
+After that: <feedback> FEEDBACK </feedback>
+then: <question> QUESTION </question>
 The XML Formatting is important. Do not remove it.
 Then give detailed feedback on the user answer combined with the correct answer.
 After that, give the next question.
