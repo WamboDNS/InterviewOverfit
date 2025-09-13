@@ -81,6 +81,7 @@ Then give detailed feedback on the user answer combined with the correct answer.
 After that, give the next question.
 
 The very first question does not need the xml tag parts. Only give that once you have user answers.
+DONT ADD A DESCRIPTION OF THE SEETTING IN THE OUTPUT. If its the first question, briefly introduce yourself and ask the question.
 
 SCORING GUIDELINES:
 +8 to +10: Exceptional answer, shows deep understanding

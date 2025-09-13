@@ -748,9 +748,15 @@ def main():
                                     # Clear chat history for fresh start with new boss
                                     st.session_state.chat_messages = []
                                     
-                                    # Add new boss question to chat
-                                    if next_question:
-                                        add_chat_message("boss", next_question)
+                                    # Get new boss's first question
+                                    with st.spinner("Getting new boss question..."):
+                                        question_result = make_api_request(f"/game/{user_id}/question", "GET")
+                                        if question_result and question_result.get('success'):
+                                            first_question = question_result.get('question', '')
+                                            if first_question:
+                                                add_chat_message("boss", first_question)
+                                        else:
+                                            st.error("Failed to get new boss question")
                                     
                                     # Clear the answer field
                                     st.session_state.current_answer = ""
