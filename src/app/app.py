@@ -1,19 +1,39 @@
 # app/main.py
 from __future__ import annotations
 from fastapi import FastAPI, HTTPException, Depends, Body
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 from pathlib import Path
 
-from app.storage.json_store import JsonStore, UserData
-from app.services.interview_session import (
+from dataloader.jston_store import JsonStore, UserData
+from interview_engine.interview_session import (
     SessionStore, InterviewSession, ChatMessage, AttemptSummary
 )
+from model_interaction.model import InterviewBossGame
 
 app = FastAPI(title="InterviewOverfit API", version="0.1.0")
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify your frontend domain
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 PROJECT_ROOT = Path(__file__).parents[1]
 user_store = JsonStore(root=PROJECT_ROOT)
 session_store = SessionStore(root=PROJECT_ROOT)
+
+# Game instances storage (in production, use Redis or database)
+game_instances: Dict[str, InterviewBossGame] = {}
+
+# Mount static files
+app.mount("/static", StaticFiles(directory="web"), name="static")
 
 # ---- (Optional) auth stub ----
 class AuthedUser(BaseModel):
@@ -39,7 +59,38 @@ class RecordAttemptIn(BaseModel):
     answer: str
     score: str  # "-10" .. "+10"
 
+# Boss Battle Game Schemas
+class StartGameIn(BaseModel):
+    api_key: Optional[str] = None
+
+class SubmitAnswerIn(BaseModel):
+    answer: str
+
+class GameStateResponse(BaseModel):
+    level: int
+    max_level: int
+    boss_name: str
+    boss_personality: str
+    boss_question_types: list[str]
+    boss_hp: int
+    max_hp: int
+    user_hp: int
+    turn_count: int
+    current_question: str
+    game_over: bool
+    victory: bool
+    conversation_length: int
+
+class GameResponse(BaseModel):
+    message: str
+    game_state: GameStateResponse
+
 # ---------------- Endpoints ----------------
+
+@app.get("/")
+def serve_game():
+    """Serve the main game interface."""
+    return FileResponse("web/index.html")
 
 @app.get("/health")
 def health():
@@ -86,7 +137,7 @@ def create_session(
     sess = session_store.create_session(uid=me.uid, domain=payload.domain, meta=payload.meta or {})
     return sess
 
-@app.get("/sessions/{uid}", response_model=List[str])
+@app.get("/sessions/{uid}", response_model=list[str])
 def list_sessions(uid: str):
     return session_store.list_sessions(uid)
 
@@ -136,6 +187,133 @@ def close_session(uid: str, session_id: str):
     sess.close()
     session_store.save(sess)
     return sess
+
+# ---------------- Boss Battle Game Endpoints ----------------
+
+@app.post("/game/{uid}/start", response_model=GameResponse)
+def start_boss_battle_game(
+    uid: str, 
+    payload: StartGameIn = Body(...),
+    me: AuthedUser = Depends(get_current_user)
+):
+    """Start a new boss battle game for the user."""
+    try:
+        # Create new game instance
+        game = InterviewBossGame(api_key=payload.api_key)
+        game_instances[uid] = game
+        
+        # Get first question
+        question = game.get_question()
+        game_state = game.get_game_state()
+        
+        return GameResponse(
+            message=question,
+            game_state=GameStateResponse(**game_state)
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to start game: {str(e)}")
+
+@app.get("/game/{uid}/status", response_model=GameStateResponse)
+def get_game_status(uid: str, me: AuthedUser = Depends(get_current_user)):
+    """Get current game status."""
+    if uid not in game_instances:
+        raise HTTPException(status_code=404, detail="No active game found")
+    
+    game = game_instances[uid]
+    game_state = game.get_game_state()
+    return GameStateResponse(**game_state)
+
+@app.post("/game/{uid}/answer", response_model=GameResponse)
+def submit_answer(
+    uid: str, 
+    payload: SubmitAnswerIn = Body(...),
+    me: AuthedUser = Depends(get_current_user)
+):
+    """Submit an answer to the current question."""
+    if uid not in game_instances:
+        raise HTTPException(status_code=404, detail="No active game found")
+    
+    try:
+        game = game_instances[uid]
+        
+        # Submit answer and get response
+        response = game.submit_answer(payload.answer)
+        game_state = game.get_game_state()
+        
+        # If game is over, clean up the instance
+        if game.game_over:
+            del game_instances[uid]
+        
+        return GameResponse(
+            message=response,
+            game_state=GameStateResponse(**game_state)
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to submit answer: {str(e)}")
+
+@app.get("/game/{uid}/question", response_model=GameResponse)
+def get_next_question(uid: str, me: AuthedUser = Depends(get_current_user)):
+    """Get the next question from the current boss."""
+    if uid not in game_instances:
+        raise HTTPException(status_code=404, detail="No active game found")
+    
+    try:
+        game = game_instances[uid]
+        
+        if game.game_over:
+            raise HTTPException(status_code=400, detail="Game is over")
+        
+        question = game.get_question()
+        game_state = game.get_game_state()
+        
+        return GameResponse(
+            message=question,
+            game_state=GameStateResponse(**game_state)
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get question: {str(e)}")
+
+@app.post("/game/{uid}/reset", response_model=GameResponse)
+def reset_game(uid: str, me: AuthedUser = Depends(get_current_user)):
+    """Reset the current game."""
+    try:
+        # Create new game instance
+        game = InterviewBossGame()
+        game_instances[uid] = game
+        
+        # Get first question
+        question = game.get_question()
+        game_state = game.get_game_state()
+        
+        return GameResponse(
+            message=question,
+            game_state=GameStateResponse(**game_state)
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to reset game: {str(e)}")
+
+@app.delete("/game/{uid}")
+def end_game(uid: str, me: AuthedUser = Depends(get_current_user)):
+    """End the current game and clean up resources."""
+    if uid in game_instances:
+        del game_instances[uid]
+        return {"message": "Game ended successfully"}
+    else:
+        raise HTTPException(status_code=404, detail="No active game found")
+
+@app.get("/game/{uid}/history")
+def get_conversation_history(uid: str, me: AuthedUser = Depends(get_current_user)):
+    """Get the conversation history for the current game."""
+    if uid not in game_instances:
+        raise HTTPException(status_code=404, detail="No active game found")
+    
+    game = game_instances[uid]
+    history = game.get_conversation_history()
+    
+    return {
+        "conversation_history": history,
+        "total_messages": len(history)
+    }
 
 # ---- Quick run hint (uvicorn) ----
 # uvicorn app.main:app --reload

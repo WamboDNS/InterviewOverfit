@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Boss Battle</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .game-header {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .game-header h2 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        .game-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .game-content {
+            padding: 30px;
+        }
+
+        .question-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-left: 5px solid #007bff;
+        }
+
+        .question-section h3 {
+            color: #007bff;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .question-text {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .answer-section {
+            margin-bottom: 25px;
+        }
+
+        .answer-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .answer-input {
+            width: 100%;
+            min-height: 120px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        .answer-input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,123,255,0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #6c757d, #495057);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(108,117,125,0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #dc3545, #c82333);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(220,53,69,0.3);
+        }
+
+        .response-section {
+            background: #e8f5e8;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-left: 5px solid #28a745;
+        }
+
+        .response-section h3 {
+            color: #28a745;
+            margin-bottom: 15px;
+        }
+
+        .response-text {
+            font-size: 1rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 5px solid #dc3545;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 5px solid #28a745;
+        }
+
+        .game-over {
+            text-align: center;
+            padding: 40px;
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+
+        .game-over h2 {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .game-over p {
+            font-size: 1.2rem;
+            color: #666;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .api-key-section {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .api-key-section h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .api-key-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .game-stats {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 Interview Boss Battle</h1>
+            <p>Fight your way from Junior to Staff Software Engineer!</p>
+        </div>
+
+        <div class="game-container">
+            <div class="game-header">
+                <h2 id="boss-name">Welcome to the Battle!</h2>
+                <div class="game-stats">
+                    <div class="stat">
+                        <div class="stat-label">Level</div>
+                        <div class="stat-value" id="level">1</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Boss HP</div>
+                        <div class="stat-value" id="boss-hp">100</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Your HP</div>
+                        <div class="stat-value" id="user-hp">100</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Turn</div>
+                        <div class="stat-value" id="turn-count">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="game-content">
+                <!-- API Key Section -->
+                <div class="api-key-section">
+                    <h4>🔑 API Configuration</h4>
+                    <input type="password" id="api-key" class="api-key-input" placeholder="Enter your Anthropic API Key (optional - can use environment variable)">
+                </div>
+
+                <!-- Start Game Section -->
+                <div id="start-section">
+                    <div class="question-section">
+                        <h3>🚀 Ready to Begin?</h3>
+                        <p>Start your journey from Junior Software Engineer to Staff Engineer by defeating interview bosses!</p>
+                        <ul style="margin-top: 15px; padding-left: 20px;">
+                            <li><strong>Level 1:</strong> Senior Developer Sarah - Focuses on fundamentals</li>
+                            <li><strong>Level 2:</strong> Engineering Manager Marcus - Business-focused system design</li>
+                            <li><strong>Level 3:</strong> Staff Engineer Dr. Chen - Architecture and leadership</li>
+                        </ul>
+                    </div>
+                    <div class="button-group">
+                        <button class="btn btn-primary" onclick="startGame()">Start Battle!</button>
+                    </div>
+                </div>
+
+                <!-- Game Section -->
+                <div id="game-section" class="hidden">
+                    <div class="question-section">
+                        <h3>❓ Current Question</h3>
+                        <div id="question-text" class="question-text">Loading question...</div>
+                    </div>
+
+                    <div class="answer-section">
+                        <h3>💭 Your Answer</h3>
+                        <textarea id="answer-input" class="answer-input" placeholder="Type your answer here..."></textarea>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn btn-primary" onclick="submitAnswer()">Submit Answer</button>
+                        <button class="btn btn-secondary" onclick="getNextQuestion()">Skip Question</button>
+                        <button class="btn btn-danger" onclick="resetGame()">Reset Game</button>
+                    </div>
+
+                    <div id="response-section" class="response-section hidden">
+                        <h3>📝 Boss Response</h3>
+                        <div id="response-text" class="response-text"></div>
+                    </div>
+                </div>
+
+                <!-- Game Over Section -->
+                <div id="game-over-section" class="hidden">
+                    <div class="game-over">
+                        <h2 id="game-over-title">Game Over!</h2>
+                        <p id="game-over-message">Thanks for playing!</p>
+                        <button class="btn btn-primary" onclick="resetGame()">Play Again</button>
+                    </div>
+                </div>
+
+                <!-- Loading -->
+                <div id="loading" class="loading hidden">Processing...</div>
+
+                <!-- Error/Success Messages -->
+                <div id="message-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        const USER_ID = 'demo-user';
+        let currentGameState = null;
+
+        // Utility functions
+        function showMessage(message, type = 'error') {
+            const container = document.getElementById('message-container');
+            container.innerHTML = `<div class="${type}">${message}</div>`;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+
+        function showLoading(show = true) {
+            document.getElementById('loading').classList.toggle('hidden', !show);
+        }
+
+        function updateGameStats(gameState) {
+            document.getElementById('level').textContent = gameState.level;
+            document.getElementById('boss-hp').textContent = gameState.boss_hp;
+            document.getElementById('user-hp').textContent = gameState.user_hp;
+            document.getElementById('turn-count').textContent = gameState.turn_count;
+            document.getElementById('boss-name').textContent = gameState.boss_name;
+        }
+
+        function showSection(sectionId) {
+            document.getElementById('start-section').classList.add('hidden');
+            document.getElementById('game-section').classList.add('hidden');
+            document.getElementById('game-over-section').classList.add('hidden');
+            document.getElementById(sectionId).classList.remove('hidden');
+        }
+
+        // API functions
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            const url = `${API_BASE}${endpoint}`;
+            const options = {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            };
+
+            if (body) {
+                options.body = JSON.stringify(body);
+            }
+
+            try {
+                const response = await fetch(url, options);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'API request failed');
+                }
+
+                return data;
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+
+        // Game functions
+        async function startGame() {
+            showLoading(true);
+            try {
+                const apiKey = document.getElementById('api-key').value.trim();
+                const response = await apiCall(`/game/${USER_ID}/start`, 'POST', {
+                    api_key: apiKey || null
+                });
+
+                currentGameState = response.game_state;
+                updateGameStats(currentGameState);
+                document.getElementById('question-text').textContent = response.message;
+                showSection('game-section');
+                showMessage('Game started successfully!', 'success');
+            } catch (error) {
+                showMessage(`Failed to start game: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function submitAnswer() {
+            const answer = document.getElementById('answer-input').value.trim();
+            if (!answer) {
+                showMessage('Please enter an answer before submitting.');
+                return;
+            }
+
+            showLoading(true);
+            try {
+                const response = await apiCall(`/game/${USER_ID}/answer`, 'POST', {
+                    answer: answer
+                });
+
+                currentGameState = response.game_state;
+                updateGameStats(currentGameState);
+
+                // Show response
+                document.getElementById('response-text').textContent = response.message;
+                document.getElementById('response-section').classList.remove('hidden');
+
+                // Clear answer input
+                document.getElementById('answer-input').value = '';
+
+                // Check if game is over
+                if (currentGameState.game_over) {
+                    if (currentGameState.victory) {
+                        document.getElementById('game-over-title').textContent = '🏆 Victory!';
+                        document.getElementById('game-over-message').textContent = 'Congratulations! You\'ve become a Staff Software Engineer!';
+                    } else {
+                        document.getElementById('game-over-title').textContent = '💀 Defeat!';
+                        document.getElementById('game-over-message').textContent = 'You were defeated! Better luck next time.';
+                    }
+                    showSection('game-over-section');
+                } else {
+                    // Get next question
+                    setTimeout(() => {
+                        getNextQuestion();
+                    }, 2000);
+                }
+
+                showMessage('Answer submitted successfully!', 'success');
+            } catch (error) {
+                showMessage(`Failed to submit answer: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function getNextQuestion() {
+            showLoading(true);
+            try {
+                const response = await apiCall(`/game/${USER_ID}/question`, 'GET');
+
+                currentGameState = response.game_state;
+                updateGameStats(currentGameState);
+                document.getElementById('question-text').textContent = response.message;
+                document.getElementById('response-section').classList.add('hidden');
+            } catch (error) {
+                showMessage(`Failed to get next question: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function resetGame() {
+            showLoading(true);
+            try {
+                const response = await apiCall(`/game/${USER_ID}/reset`, 'POST');
+
+                currentGameState = response.game_state;
+                updateGameStats(currentGameState);
+                document.getElementById('question-text').textContent = response.message;
+                document.getElementById('answer-input').value = '';
+                document.getElementById('response-section').classList.add('hidden');
+                showSection('game-section');
+                showMessage('Game reset successfully!', 'success');
+            } catch (error) {
+                showMessage(`Failed to reset game: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if API key is already set
+            const savedApiKey = localStorage.getItem('anthropic_api_key');
+            if (savedApiKey) {
+                document.getElementById('api-key').value = savedApiKey;
+            }
+
+            // Save API key when changed
+            document.getElementById('api-key').addEventListener('input', function() {
+                localStorage.setItem('anthropic_api_key', this.value);
+            });
+
+            // Allow Enter key to submit answer
+            document.getElementById('answer-input').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && e.ctrlKey) {
+                    submitAnswer();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
