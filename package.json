@@ -1,0 +1,19 @@
+{
+  "name": "interview-boss-battle-client",
+  "version": "1.0.0",
+  "description": "Node.js client for Interview Boss Battle API",
+  "main": "nodejs-example.js",
+  "scripts": {
+    "start": "node nodejs-example.js",
+    "test-api": "node -e \"require('./nodejs-example.js').InterviewBossGameClient; console.log('Client loaded successfully!');\""
+  },
+  "keywords": ["interview", "game", "api", "client"],
+  "author": "Interview Boss Battle",
+  "license": "MIT",
+  "dependencies": {
+    "node-fetch": "^2.6.7"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

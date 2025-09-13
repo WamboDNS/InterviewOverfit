@@ -16,12 +16,23 @@ from model_interaction.model import InterviewBossGame
 
 app = FastAPI(title="InterviewOverfit API", version="0.1.0")
 
-# Add CORS middleware
+# Add CORS middleware for Node.js frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify your frontend domain
+    allow_origins=[
+        "http://localhost:3000",  # React default
+        "http://localhost:3001",  # Alternative React port
+        "http://localhost:8080",  # Vue default
+        "http://localhost:4200",  # Angular default
+        "http://localhost:5173",  # Vite default
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+        "http://127.0.0.1:8080",
+        "http://127.0.0.1:4200",
+        "http://127.0.0.1:5173",
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -82,8 +93,23 @@ class GameStateResponse(BaseModel):
     conversation_length: int
 
 class GameResponse(BaseModel):
+    success: bool
     message: str
     game_state: GameStateResponse
+    error: Optional[str] = None
+
+class QuestionResponse(BaseModel):
+    success: bool
+    question: str
+    game_state: GameStateResponse
+    error: Optional[str] = None
+
+class AnswerResponse(BaseModel):
+    success: bool
+    score: int
+    feedback: str
+    game_state: GameStateResponse
+    error: Optional[str] = None
 
 # ---------------- Endpoints ----------------
 
@@ -94,7 +120,33 @@ def serve_game():
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "ok", "service": "Interview Boss Battle API"}
+
+@app.get("/api/info")
+def api_info():
+    """Get API information for frontend integration."""
+    return {
+        "name": "Interview Boss Battle API",
+        "version": "1.0.0",
+        "description": "Gamified interview preparation system",
+        "endpoints": {
+            "start_game": "POST /game/{uid}/start",
+            "submit_answer": "POST /game/{uid}/answer", 
+            "get_question": "GET /game/{uid}/question",
+            "get_status": "GET /game/{uid}/status",
+            "reset_game": "POST /game/{uid}/reset",
+            "end_game": "DELETE /game/{uid}",
+            "get_history": "GET /game/{uid}/history"
+        },
+        "cors_enabled": True,
+        "supported_origins": [
+            "http://localhost:3000",
+            "http://localhost:3001", 
+            "http://localhost:8080",
+            "http://localhost:4200",
+            "http://localhost:5173"
+        ]
+    }
 
 # --- User ---
 @app.post("/users/{uid}", response_model=UserData)
@@ -190,7 +242,7 @@ def close_session(uid: str, session_id: str):
 
 # ---------------- Boss Battle Game Endpoints ----------------
 
-@app.post("/game/{uid}/start", response_model=GameResponse)
+@app.post("/game/{uid}/start", response_model=QuestionResponse)
 def start_boss_battle_game(
     uid: str, 
     payload: StartGameIn = Body(...),
@@ -206,12 +258,23 @@ def start_boss_battle_game(
         question = game.get_question()
         game_state = game.get_game_state()
         
-        return GameResponse(
-            message=question,
+        return QuestionResponse(
+            success=True,
+            question=question,
             game_state=GameStateResponse(**game_state)
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to start game: {str(e)}")
+        return QuestionResponse(
+            success=False,
+            question="",
+            game_state=GameStateResponse(
+                level=1, max_level=3, boss_name="", boss_personality="", 
+                boss_question_types=[], boss_hp=0, max_hp=100, user_hp=0, 
+                turn_count=0, current_question="", game_over=True, 
+                victory=False, conversation_length=0
+            ),
+            error=f"Failed to start game: {str(e)}"
+        )
 
 @app.get("/game/{uid}/status", response_model=GameStateResponse)
 def get_game_status(uid: str, me: AuthedUser = Depends(get_current_user)):
@@ -223,7 +286,7 @@ def get_game_status(uid: str, me: AuthedUser = Depends(get_current_user)):
     game_state = game.get_game_state()
     return GameStateResponse(**game_state)
 
-@app.post("/game/{uid}/answer", response_model=GameResponse)
+@app.post("/game/{uid}/answer", response_model=AnswerResponse)
 def submit_answer(
     uid: str, 
     payload: SubmitAnswerIn = Body(...),
@@ -231,7 +294,18 @@ def submit_answer(
 ):
     """Submit an answer to the current question."""
     if uid not in game_instances:
-        raise HTTPException(status_code=404, detail="No active game found")
+        return AnswerResponse(
+            success=False,
+            score=0,
+            feedback="No active game found",
+            game_state=GameStateResponse(
+                level=1, max_level=3, boss_name="", boss_personality="", 
+                boss_question_types=[], boss_hp=0, max_hp=100, user_hp=0, 
+                turn_count=0, current_question="", game_over=True, 
+                victory=False, conversation_length=0
+            ),
+            error="No active game found"
+        )
     
     try:
         game = game_instances[uid]
@@ -240,40 +314,99 @@ def submit_answer(
         response = game.submit_answer(payload.answer)
         game_state = game.get_game_state()
         
+        # Parse the response to extract score and feedback
+        score = 0
+        feedback = response
+        
+
+        try:
+            score_match = re.search(r'<score>\s*([+-]?\d+)\s*</score>', first_line)
+
+            if score_match:
+                score = int(score_match.group(1))
+                # Clamp the score to the allowed range [-10, 10]
+                score = max(-10, min(10, score))
+                feedback = '\n'.join(lines[1:]).strip() if len(lines) > 1 else "No feedback provided."
+                return score, feedback
+        except:
+            pass
+        
+        feedback = response.split("</END_SCORE>")
+        feedback = feedback[1].strip()
+        
         # If game is over, clean up the instance
         if game.game_over:
             del game_instances[uid]
         
-        return GameResponse(
-            message=response,
+        return AnswerResponse(
+            success=True,
+            score=score,
+            feedback=feedback,
             game_state=GameStateResponse(**game_state)
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to submit answer: {str(e)}")
+        return AnswerResponse(
+            success=False,
+            score=0,
+            feedback="",
+            game_state=GameStateResponse(
+                level=1, max_level=3, boss_name="", boss_personality="", 
+                boss_question_types=[], boss_hp=0, max_hp=100, user_hp=0, 
+                turn_count=0, current_question="", game_over=True, 
+                victory=False, conversation_length=0
+            ),
+            error=f"Failed to submit answer: {str(e)}"
+        )
 
-@app.get("/game/{uid}/question", response_model=GameResponse)
+@app.get("/game/{uid}/question", response_model=QuestionResponse)
 def get_next_question(uid: str, me: AuthedUser = Depends(get_current_user)):
     """Get the next question from the current boss."""
     if uid not in game_instances:
-        raise HTTPException(status_code=404, detail="No active game found")
+        return QuestionResponse(
+            success=False,
+            question="No active game found",
+            game_state=GameStateResponse(
+                level=1, max_level=3, boss_name="", boss_personality="", 
+                boss_question_types=[], boss_hp=0, max_hp=100, user_hp=0, 
+                turn_count=0, current_question="", game_over=True, 
+                victory=False, conversation_length=0
+            ),
+            error="No active game found"
+        )
     
     try:
         game = game_instances[uid]
         
         if game.game_over:
-            raise HTTPException(status_code=400, detail="Game is over")
+            return QuestionResponse(
+                success=False,
+                question="Game is over",
+                game_state=GameStateResponse(**game.get_game_state()),
+                error="Game is over"
+            )
         
         question = game.get_question()
         game_state = game.get_game_state()
         
-        return GameResponse(
-            message=question,
+        return QuestionResponse(
+            success=True,
+            question=question,
             game_state=GameStateResponse(**game_state)
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get question: {str(e)}")
+        return QuestionResponse(
+            success=False,
+            question="",
+            game_state=GameStateResponse(
+                level=1, max_level=3, boss_name="", boss_personality="", 
+                boss_question_types=[], boss_hp=0, max_hp=100, user_hp=0, 
+                turn_count=0, current_question="", game_over=True, 
+                victory=False, conversation_length=0
+            ),
+            error=f"Failed to get question: {str(e)}"
+        )
 
-@app.post("/game/{uid}/reset", response_model=GameResponse)
+@app.post("/game/{uid}/reset", response_model=QuestionResponse)
 def reset_game(uid: str, me: AuthedUser = Depends(get_current_user)):
     """Reset the current game."""
     try:
@@ -285,21 +418,32 @@ def reset_game(uid: str, me: AuthedUser = Depends(get_current_user)):
         question = game.get_question()
         game_state = game.get_game_state()
         
-        return GameResponse(
-            message=question,
+        return QuestionResponse(
+            success=True,
+            question=question,
             game_state=GameStateResponse(**game_state)
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to reset game: {str(e)}")
+        return QuestionResponse(
+            success=False,
+            question="",
+            game_state=GameStateResponse(
+                level=1, max_level=3, boss_name="", boss_personality="", 
+                boss_question_types=[], boss_hp=0, max_hp=100, user_hp=0, 
+                turn_count=0, current_question="", game_over=True, 
+                victory=False, conversation_length=0
+            ),
+            error=f"Failed to reset game: {str(e)}"
+        )
 
 @app.delete("/game/{uid}")
 def end_game(uid: str, me: AuthedUser = Depends(get_current_user)):
     """End the current game and clean up resources."""
     if uid in game_instances:
         del game_instances[uid]
-        return {"message": "Game ended successfully"}
+        return {"success": True, "message": "Game ended successfully"}
     else:
-        raise HTTPException(status_code=404, detail="No active game found")
+        return {"success": False, "message": "No active game found"}
 
 @app.get("/game/{uid}/history")
 def get_conversation_history(uid: str, me: AuthedUser = Depends(get_current_user)):
