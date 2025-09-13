@@ -7,6 +7,9 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 from pathlib import Path
+import json
+import os
+from datetime import datetime
 
 from dataloader.jston_store import JsonStore, UserData
 from interview_engine.interview_session import (
@@ -458,6 +461,76 @@ def get_conversation_history(uid: str, me: AuthedUser = Depends(get_current_user
         "conversation_history": history,
         "total_messages": len(history)
     }
+
+
+@app.get("/game/{uid}/save")
+def save_game_state(uid: str, filename: str = None, me: AuthedUser = Depends(get_current_user)):
+    """Save game state to a file."""
+    if uid not in game_instances:
+        raise HTTPException(status_code=404, detail="No active game found")
+    
+    try:
+        game = game_instances[uid]
+        
+        # Generate filename if not provided
+        if not filename:
+            filename = f"game_save.json"
+            
+        # Save to file
+        filepath = f"saves/{filename}"
+        os.makedirs("saves", exist_ok=True)  # Create saves directory if it doesn't exist
+        
+        game.dump_game_state_to_json(filepath)
+        
+        return {
+            "success": True,
+            "message": f"Game state saved to {filepath}",
+            "filename": filename,
+            "filepath": filepath,
+            "save_timestamp": datetime.now().isoformat(),
+            "user_id": uid
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save game state: {str(e)}")
+
+@app.get("/game/{uid}/load")
+def load_game_state(uid: str, filename: str = None, me: AuthedUser = Depends(get_current_user)):
+    """Load game state from a JSON file."""
+    try:
+        # Generate filename if not provided
+        if not filename:
+            filename = f"game_save.json"
+            
+        # Load from file
+        filepath = f"saves/{filename}"
+        
+        if not os.path.exists(filepath):
+            raise HTTPException(status_code=404, detail=f"Save file not found: {filepath}")
+        
+        # Read the JSON file
+        with open(filepath, 'r', encoding='utf-8') as f:
+            json_data = f.read()
+        
+        # Create new game instance and load the state
+        game = InterviewBossGame()
+        loaded_data = game.load_game_state_from_json(json_data)
+        
+        if loaded_data:  # If loading was successful
+            game_instances[uid] = game
+            return {
+                "success": True,
+                "message": f"Game state loaded from {filepath}",
+                "filename": filename,
+                "filepath": filepath,
+                "game_data": loaded_data
+            }
+        else:
+            raise HTTPException(status_code=400, detail="Invalid game state data in file")
+            
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Save file not found: {filepath}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to load game state: {str(e)}")
 
 # ---- Quick run hint (uvicorn) ----
 # uvicorn app.main:app --reload

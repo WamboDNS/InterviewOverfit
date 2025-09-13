@@ -8,6 +8,7 @@ into an RPG-style boss battle game using AI.
 import anthropic
 import os
 import re
+import json
 from typing import Dict, Tuple, Optional
 
 
@@ -382,6 +383,72 @@ Turn: {self.turn_count}"""
     def get_current_boss_info(self) -> Dict[str, str]:
         """Get current boss information."""
         return self.get_boss_info()
+
+    def dump_game_state_to_json(self, filepath: Optional[str] = None) -> str:
+        """
+        Dump all important game parameters and state to JSON format.
+        
+        Args:
+            filepath: Optional file path to save the JSON. If None, returns JSON string.
+            
+        Returns:
+            JSON string containing all game state data
+        """
+        boss_info = self.get_boss_info()
+        
+        game_data = {
+            # Game Configuration
+            "game_config": {
+                "max_level": self.MAX_LEVEL,
+                "max_hp": self.MAX_HP,
+                "score_range": self.SCORE_RANGE
+            },
+            
+            # Current Game State
+            "current_state": {
+                "level": self.level,
+                "boss_hp": self.boss_hp,
+                "user_hp": self.user_hp,
+                "turn_count": self.turn_count,
+                "current_question": self.current_question,
+                "game_over": self.game_over,
+                "victory": self.victory
+            },
+            
+            # Boss Information
+            "current_boss": {
+                "level": self.level,
+                "name": boss_info["name"],
+            },
+        }
+        
+        json_string = json.dumps(game_data, indent=2, ensure_ascii=False)
+        
+        if filepath:
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write(json_string)
+            print(f"✅ Game state saved to: {filepath}")
+        
+        return json_string
+
+    def load_game_state_from_json(self, json_data: str) -> bool:
+        """
+        Load game state from JSON data.
+        
+        Args:
+            json_data: JSON string containing game state data
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            data = json.loads(json_data)
+            
+            return data
+            
+        except Exception as e:
+            print(f"❌ Error loading game state: {e}")
+            return {}
 
 
 # ==================== EXAMPLE USAGE ====================
