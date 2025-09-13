@@ -23,7 +23,7 @@ class InterviewBossGame:
     # ==================== GAME CONFIGURATION ====================
     
     MAX_LEVEL = 3
-    MAX_HP = 100
+    MAX_HP = 30
     SCORE_RANGE = (-10, 10)
     
     # ==================== BOSS DEFINITIONS ====================
@@ -173,7 +173,6 @@ You are currently {boss_info['name']}. Ask an appropriate interview question for
             # Clamp the score to the allowed range [-10, 10]
             score = max(-10, min(10, score))
             feedback = '\n'.join(lines[1:]).strip() if len(lines) > 1 else "No feedback provided."
-            print("HOOOOO bin drin")
             return score, feedback
         
         return 0, response
@@ -313,9 +312,9 @@ Now evaluate this answer and respond as {boss_info['name']}. Remember:
                 status_msg = "\n💀 You were defeated! Game restarted..."
 
             return f"""<score>{score:+d}</score>
-        {feedback}
-        {result_msg}
-        Boss HP: {max(0, self.boss_hp)}/{self.MAX_HP} | Your HP: {max(0, self.user_hp)}/{self.MAX_HP}{status_msg}"""
+{feedback}
+{result_msg}
+Boss HP: {max(0, self.boss_hp)}/{self.MAX_HP} | Your HP: {max(0, self.user_hp)}/{self.MAX_HP}{status_msg}"""
 
         except Exception as e:
             return f"Error evaluating answer: {e}"

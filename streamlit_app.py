@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Interview Boss Battle - Modern Streamlit Frontend
+InterviewOverfit
 A gamified interview preparation system with beautiful UI
 """
 
@@ -333,6 +333,8 @@ if 'chat_messages' not in st.session_state:
     st.session_state.chat_messages = []
 if 'sidebar_visible' not in st.session_state:
     st.session_state.sidebar_visible = True
+if 'answer_counter' not in st.session_state:
+    st.session_state.answer_counter = 0
 
 def make_api_request(endpoint: str, method: str = "GET", data: Optional[Dict] = None) -> Optional[Dict]:
     """Make API request to backend with error handling."""
@@ -542,7 +544,7 @@ def main():
     # Header
     st.markdown("""
     <div class="main-header">
-        <h1>🎮 Interview Boss Battle</h1>
+        <h1>🎮 InterviewOverfit</h1>
         <p>Level up your interview skills by defeating challenging boss interviews!</p>
     </div>
     """, unsafe_allow_html=True)
@@ -564,19 +566,21 @@ def main():
         with col2:
             # Backend status
             st.markdown("### 🔗 Backend Status")
-            if st.button("Check Connection"):
+            try:
                 result = make_api_request("/health")
                 if result:
-                    st.success("✅ Backend Connected")
+                    st.success("✅ Connected")
                 else:
-                    st.error("❌ Backend Disconnected")
+                    st.error("❌ Disconnected")
+            except:
+                st.error("❌ Disconnected")
         
         st.markdown("---")
         
         # Game controls
         st.markdown("### 🎮 Game Controls")
         
-        col1, col2, col3 = st.columns(3)
+        col1, col2 = st.columns(2)
         with col1:
             if st.button("🚀 Start Game", use_container_width=True):
                 with st.spinner("Starting new game..."):
@@ -597,9 +601,13 @@ def main():
                         st.error("Failed to start game")
         
         with col2:
-            if st.button("🔄 Reset Game", use_container_width=True):
-                with st.spinner("Resetting game..."):
-                    result = make_api_request(f"/game/{user_id}/reset", "POST")
+            if st.button("🔄 New Game", use_container_width=True):
+                with st.spinner("Starting new game..."):
+                    # End current game first
+                    make_api_request(f"/game/{user_id}", "DELETE")
+                    # Start new game
+                    data = {"api_key": api_key} if api_key else {}
+                    result = make_api_request(f"/game/{user_id}/start", "POST", data)
                     if result and result.get('success'):
                         st.session_state.game_state = result.get('game_state')
                         st.session_state.chat_messages = []  # Clear chat history
@@ -609,23 +617,10 @@ def main():
                         if first_question:
                             add_chat_message("boss", first_question)
                         
-                        st.success("Game reset!")
+                        st.success("New game started!")
                         st.rerun()
                     else:
-                        st.error("Failed to reset game")
-        
-        with col3:
-            if st.button("🗑️ End Game", use_container_width=True):
-                with st.spinner("Ending game..."):
-                    result = make_api_request(f"/game/{user_id}", "DELETE")
-                    if result and result.get('success'):
-                        st.session_state.game_state = None
-                        st.session_state.conversation_history = []
-                        st.session_state.chat_messages = []
-                        st.success("Game ended!")
-                        st.rerun()
-                    else:
-                        st.error("Failed to end game")
+                        st.error("Failed to start new game")
     
     # Main content area
     if not st.session_state.game_state:
@@ -672,7 +667,7 @@ def main():
                 height=150,
                 placeholder="Provide a thoughtful, detailed answer to the boss's question...",
                 help="Answer the most recent question from the boss",
-                value=st.session_state.current_answer
+                key=f"answer_input_{st.session_state.get('answer_counter', 0)}"
             )
             
             # Update session state when user types
@@ -713,10 +708,15 @@ def main():
                                 
                                 # Clear the answer field for the next question
                                 st.session_state.current_answer = ""
+                                st.session_state.answer_counter += 1
                                 
                                 st.rerun()
                             else:
                                 st.error("Failed to submit answer")
+                                # Clear the answer field even on error
+                                st.session_state.current_answer = ""
+                                st.session_state.answer_counter += 1
+                                st.rerun()
                     else:
                         st.warning("Please enter an answer before submitting")
         else:
@@ -739,20 +739,6 @@ def main():
                 """, unsafe_allow_html=True)
         
         
-        # Game statistics
-        with st.expander("📊 Game Statistics"):
-            if game_state:
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    st.metric("Current Level", game_state.get('level', 1))
-                    st.metric("Boss HP", game_state.get('boss_hp', 0))
-                    st.metric("Your HP", game_state.get('user_hp', 100))
-                
-                with col2:
-                    st.metric("Turn Count", game_state.get('turn_count', 0))
-                    st.metric("Conversation Length", game_state.get('conversation_length', 0))
-                    st.metric("Max Level", game_state.get('max_level', 3))
 
 if __name__ == "__main__":
     main()

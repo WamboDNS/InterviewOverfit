@@ -74,7 +74,7 @@ def start_backend():
 
 def main():
     """Start the Streamlit application."""
-    print("🎮 Interview Boss Battle - Modern Frontend")
+    print("🎮 InterviewOverfit - Modern Frontend")
     print("=" * 60)
     print("A gamified interview preparation system")
     print("Built with Streamlit and FastAPI")
