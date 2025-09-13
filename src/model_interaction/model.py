@@ -296,7 +296,7 @@ Now evaluate this answer and respond as {boss_info['name']}. Remember:
             
             # Update HP based on score
             if score > 0:
-                damage = score
+                damage = score * 15
                 self.boss_hp -= damage
                 self.boss_hp = max(0, self.boss_hp)  # Ensure HP doesn't go below 0
                 result_msg = f"💥 Boss takes {damage} damage!"
@@ -313,9 +313,7 @@ Now evaluate this answer and respond as {boss_info['name']}. Remember:
             # Check win/lose conditions
             status_msg = ""
             if self.boss_hp <= 0:
-                print(f"🔍 Debug: Boss defeated at level {self.level}, advancing level...")
                 self._advance_level()
-                print(f"🔍 Debug: After advance_level: level={self.level}, victory={self.victory}, game_over={self.game_over}")
                 if not self.victory:
                     status_msg = "\n🎯 Boss defeated! Moving to next level..."
             elif self.user_hp <= 0:
@@ -333,7 +331,6 @@ Boss HP: {max(0, self.boss_hp)}/{self.get_boss_max_hp()} | Your HP: {max(0, self
 
     def _advance_level(self) -> None:
         """Advance to next level or complete game."""
-        print(f"🔍 Debug: _advance_level called, current level={self.level}, MAX_LEVEL={self.MAX_LEVEL}")
         if self.level < self.MAX_LEVEL:
             self.level += 1
             # Reset all game state for fresh start with new boss
