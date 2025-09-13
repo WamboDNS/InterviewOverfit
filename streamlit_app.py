@@ -699,6 +699,7 @@ def main():
                                 render_feedback(score, feedback)
                                 
                                 # Update game state
+                                old_game_state = st.session_state.game_state
                                 new_game_state = result.get('game_state')
                                 st.session_state.game_state = new_game_state
                                 
@@ -735,9 +736,31 @@ def main():
                                     
                                     st.rerun()
                                 else:
-                                    # Normal game flow - add next question if game continues
-                                    if not new_game_state.get('game_over', False) and next_question:
-                                        add_chat_message("boss", next_question)
+                                    # Check if player leveled up (boss defeated)
+                                    old_level = old_game_state.get('level', 1) if old_game_state else 1
+                                    new_level = new_game_state.get('level', 1)
+                                    
+                                    if new_level > old_level:
+                                        # Player leveled up - show victory message and clear chat
+                                        st.success(f"🎯 Boss defeated! Moving to level {new_level}!")
+                                        st.info("Starting fresh conversation with the new boss...")
+                                        
+                                        # Clear chat history for fresh start with new boss
+                                        st.session_state.chat_messages = []
+                                        
+                                        # Add new boss question to chat
+                                        if next_question:
+                                            add_chat_message("boss", next_question)
+                                        
+                                        # Clear the answer field
+                                        st.session_state.current_answer = ""
+                                        st.session_state.answer_counter += 1
+                                        
+                                        st.rerun()
+                                    else:
+                                        # Normal game flow - add next question if game continues
+                                        if not new_game_state.get('game_over', False) and next_question:
+                                            add_chat_message("boss", next_question)
                                 
                                 # Clear the answer field for the next question
                                 st.session_state.current_answer = ""

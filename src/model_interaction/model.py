@@ -32,6 +32,7 @@ class InterviewBossGame:
         1: {
             "name": "Senior Developer Sarah",
             "personality": "Encouraging mentor who focuses on fundamentals",
+            "MAX_HP": 5,
             "question_types": [
                 "Data structures", 
                 "Basic algorithms", 
@@ -42,6 +43,7 @@ class InterviewBossGame:
         2: {
             "name": "Engineering Manager Marcus", 
             "personality": "Business-focused leader who cares about scalability",
+            "MAX_HP": 10,
             "question_types": [
                 "System design", 
                 "Database design", 
@@ -52,6 +54,7 @@ class InterviewBossGame:
         3: {
             "name": "Staff Engineer Dr. Chen",
             "personality": "Brilliant architect who expects excellence", 
+            "MAX_HP": 15,
             "question_types": [
                 "Distributed systems", 
                 "Technical leadership", 
