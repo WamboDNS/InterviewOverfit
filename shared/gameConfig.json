@@ -1,0 +1,62 @@
+{
+  "evaluation": {
+    "scoring": {
+      "baseDamage": {
+        "min": 5,
+        "max": 20,
+        "keywordMultiplier": 2
+      },
+      "bonuses": {
+        "detailedAnswer": {
+          "threshold": 100,
+          "damage": 5
+        },
+        "veryDetailedAnswer": {
+          "threshold": 300,
+          "damage": 5
+        },
+        "codeExample": {
+          "damage": 10,
+          "patterns": ["{}", "[]", ";", "()", "=>", "//", "/*", "*/", "function", "const", "let", "var", "import", "export", "class", "if", "for", "while"]
+        }
+      },
+      "maxDamage": 25
+    },
+    "damageThresholds": {
+      "excellent": 20,
+      "good": 12,
+      "poor": 8
+    },
+    "combo": {
+      "increaseThreshold": 15,
+      "decreaseThreshold": 8,
+      "maxCombo": 5
+    }
+  },
+  "gameMechanics": {
+    "initialStats": {
+      "userHp": 100,
+      "timeLimit": 90,
+      "combo": 1
+    },
+    "damage": {
+      "timeoutPenalty": 25,
+      "poorAnswerPenalty": 15
+    },
+    "scoring": {
+      "damageMultiplier": 15
+    },
+    "starCalculation": {
+      "baseStars": 1,
+      "highScoreThreshold": 1000,
+      "healthThreshold": 50,
+      "timeThreshold": 30,
+      "maxStars": 3
+    }
+  },
+  "timing": {
+    "bossResponseDelay": 1000,
+    "nextQuestionDelay": 1500,
+    "gameEndDelay": 2000
+  }
+}

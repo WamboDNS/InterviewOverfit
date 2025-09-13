@@ -4,6 +4,7 @@ import { BossSection } from "./BossSection";
 import { ChatFeed } from "./ChatFeed";
 import { HUD } from "./HUD";
 import { ChatInput } from "./ChatInput";
+import { getGameConfig, getGameLogic, initializeGameConfig } from "../utils/gameConfig";
 
 interface GameBattleProps {
   level: LevelData;
@@ -12,6 +13,10 @@ interface GameBattleProps {
 }
 
 export function GameBattle({ level, onComplete, onBack }: GameBattleProps) {
+  // Initialize game configuration
+  const [config, setConfig] = useState<any>(null);
+  const [gameLogic, setGameLogic] = useState<any>(null);
+  
   // Game state
   const [bossHp, setBossHp] = useState(level.boss.hp);
   const [userHp, setUserHp] = useState(100);
@@ -34,79 +39,76 @@ export function GameBattle({ level, onComplete, onBack }: GameBattleProps) {
     },
   ]);
 
+  // Initialize game configuration
+  useEffect(() => {
+    const initConfig = async () => {
+      try {
+        const gameConfig = await initializeGameConfig();
+        const logic = getGameLogic();
+        setConfig(gameConfig);
+        setGameLogic(logic);
+        
+        // Update initial state with config values
+        setUserHp(gameConfig.gameMechanics.initialStats.userHp);
+        setTimeLeft(gameConfig.gameMechanics.initialStats.timeLimit);
+        setCombo(gameConfig.gameMechanics.initialStats.combo);
+      } catch (error) {
+        console.error('Failed to initialize game configuration:', error);
+      }
+    };
+    
+    initConfig();
+  }, []);
+
   // Timer countdown
   useEffect(() => {
+    if (!config || !gameLogic) return;
+    
     if (timeLeft > 0 && bossHp > 0 && userHp > 0) {
       const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
       return () => clearTimeout(timer);
     } else if (timeLeft === 0) {
       // Time's up - boss attacks
-      setUserHp(Math.max(0, userHp - 25));
-      setTimeLeft(90);
-      setCombo(1);
+      const newUserHp = gameLogic.applyPenalty(userHp, 'timeout');
+      setUserHp(newUserHp);
+      setTimeLeft(config.gameMechanics.initialStats.timeLimit);
+      setCombo(config.gameMechanics.initialStats.combo);
     }
-  }, [timeLeft, bossHp, userHp]);
+  }, [timeLeft, bossHp, userHp, config, gameLogic]);
 
   // Check for game end
   useEffect(() => {
+    if (!config || !gameLogic) return;
+    
     if (bossHp <= 0) {
-      const stars = calculateStars(score, userHp, timeLeft);
-      setTimeout(() => onComplete('victory', score, stars), 2000);
+      const stars = gameLogic.calculateStars(score, userHp, timeLeft);
+      setTimeout(() => onComplete('victory', score, stars), config.timing.gameEndDelay);
     } else if (userHp <= 0) {
-      setTimeout(() => onComplete('defeat', score, 0), 2000);
+      setTimeout(() => onComplete('defeat', score, 0), config.timing.gameEndDelay);
     }
-  }, [bossHp, userHp, score, onComplete]);
-
-  const calculateStars = (finalScore: number, remainingHp: number, remainingTime: number): number => {
-    let stars = 1; // Base star for completion
-    
-    // Bonus star for high score
-    if (finalScore > 1000) stars++;
-    
-    // Bonus star for maintaining health and time
-    if (remainingHp > 50 && remainingTime > 30) stars++;
-    
-    return Math.min(stars, 3);
-  };
+  }, [bossHp, userHp, score, onComplete, config, gameLogic]);
 
   const evaluateAnswer = (content: string): number => {
-    // Simple keyword-based evaluation (in a real app, this could use AI)
-    const keywordCount = level.boss.questions[currentQuestionIndex]
-      .toLowerCase()
-      .split(' ')
-      .filter(word => content.toLowerCase().includes(word))
-      .length;
+    if (!gameLogic) return 0;
     
-    const contentLength = content.length;
-    const hasCodePatterns = /[{}\[\];()=>]|\/\/|\/\*|\*\/|function|const|let|var|import|export|class|if|for|while/.test(content);
-    
-    // Calculate damage based on various factors
-    let baseDamage = Math.min(20, Math.max(5, keywordCount * 2));
-    
-    // Bonus for detailed answers
-    if (contentLength > 100) baseDamage += 5;
-    if (contentLength > 300) baseDamage += 5;
-    
-    // Bonus for code examples
-    if (hasCodePatterns) baseDamage += 10;
-    
-    return Math.min(baseDamage, 25);
+    const question = level.boss.questions[currentQuestionIndex];
+    const evaluationResult = gameLogic.evaluateAnswer(content, question);
+    return evaluationResult.damage;
   };
 
   const getBossResponse = (damage: number): string => {
-    const { responses } = level.boss;
+    if (!gameLogic) return "I'm not ready yet...";
     
-    if (damage >= 20) {
-      return responses.excellent[Math.floor(Math.random() * responses.excellent.length)];
-    } else if (damage >= 12) {
-      return responses.good[Math.floor(Math.random() * responses.good.length)];
-    } else {
-      return responses.poor[Math.floor(Math.random() * responses.poor.length)];
-    }
+    const { responses } = level.boss;
+    const responseType = gameLogic.getBossResponseType(damage);
+    
+    return responses[responseType][Math.floor(Math.random() * responses[responseType].length)];
   };
 
   // Handle user messages
   const handleSendMessage = (content: string, isCode: boolean) => {
+    if (!config || !gameLogic) return;
+    
     // Add user message
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
@@ -125,17 +127,15 @@ export function GameBattle({ level, onComplete, onBack }: GameBattleProps) {
     setBossHp(newBossHp);
 
     // Update score
-    setScore(prev => prev + totalDamage * 15);
+    const scoreIncrease = gameLogic.calculateScore(damage, combo);
+    setScore(prev => prev + scoreIncrease);
     
     // Update combo
-    if (damage >= 15) {
-      setCombo(prev => Math.min(prev + 1, 5));
-    } else if (damage < 8) {
-      setCombo(1);
-    }
+    const newCombo = gameLogic.calculateCombo(combo, damage);
+    setCombo(newCombo);
 
     // Reset timer
-    setTimeLeft(90);
+    setTimeLeft(config.gameMechanics.initialStats.timeLimit);
 
     // Boss response after short delay
     setTimeout(() => {
@@ -147,8 +147,9 @@ export function GameBattle({ level, onComplete, onBack }: GameBattleProps) {
         bossResponse = getBossResponse(damage);
         
         // Boss counter-attacks on poor answers
-        if (damage < 8) {
-          setUserHp(prev => Math.max(0, prev - 15));
+        if (damage < config.evaluation.damageThresholds.poor) {
+          const newUserHp = gameLogic.applyPenalty(userHp, 'poorAnswer');
+          setUserHp(newUserHp);
         }
       }
 
@@ -175,9 +176,9 @@ export function GameBattle({ level, onComplete, onBack }: GameBattleProps) {
           };
           
           setMessages(prev => [...prev, questionMessage]);
-        }, 1500);
+        }, config.timing.nextQuestionDelay);
       }
-    }, 1000);
+    }, config.timing.bossResponseDelay);
   };
 
   const gameOver = bossHp <= 0 || userHp <= 0;
@@ -228,9 +229,9 @@ export function GameBattle({ level, onComplete, onBack }: GameBattleProps) {
         <div className="col-span-4 h-96">
           <HUD
             userHp={userHp}
-            maxUserHp={100}
+            maxUserHp={config?.gameMechanics.initialStats.userHp || 100}
             timeLeft={timeLeft}
-            maxTime={90}
+            maxTime={config?.gameMechanics.initialStats.timeLimit || 90}
             score={score}
             combo={combo}
           />
