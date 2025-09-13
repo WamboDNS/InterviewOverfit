@@ -319,15 +319,16 @@ def submit_answer(
         feedback = response
         
 
+        # Parse response using the game's built-in score parsing
         try:
-            score_match = re.search(r'<score>\s*([+-]?\d+)\s*</score>', first_line)
-
-            if score_match:
-                score = int(score_match.group(1))
-                # Clamp the score to the allowed range [-10, 10]
-                score = max(-10, min(10, score))
-                feedback = '\n'.join(lines[1:]).strip() if len(lines) > 1 else "No feedback provided."
-                return score, feedback
+            lines = response.strip().split('\n')
+            if lines:
+                first_line = lines[0].strip()
+                import re
+                score_match = re.search(r'<score>\s*([+-]?\d+)\s*</score>', first_line)
+                if score_match:
+                    score = int(score_match.group(1))
+                    score = max(-10, min(10, score))
         except:
             pass
         
