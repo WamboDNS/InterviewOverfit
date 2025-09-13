@@ -5,9 +5,10 @@ interface BossSectionProps {
   bossHp: number;
   maxBossHp: number;
   currentQuestion: string;
+  bossAvatar?: string;
 }
 
-export function BossSection({ bossHp, maxBossHp, currentQuestion }: BossSectionProps) {
+export function BossSection({ bossHp, maxBossHp, currentQuestion, bossAvatar = "🤖" }: BossSectionProps) {
   const hpPercentage = (bossHp / maxBossHp) * 100;
 
   return (
@@ -20,7 +21,7 @@ export function BossSection({ bossHp, maxBossHp, currentQuestion }: BossSectionP
         <div className="relative">
           <Avatar className="w-20 h-20 border-2 border-white/30 bg-black/20 backdrop-blur-sm">
             <AvatarFallback className="bg-black/40 text-white text-2xl backdrop-blur-sm">
-              🤖
+              {bossAvatar}
             </AvatarFallback>
           </Avatar>
           <div className="absolute -top-1 -right-1 w-4 h-4 bg-white/80 rounded-full animate-pulse" />

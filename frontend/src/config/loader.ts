@@ -6,33 +6,21 @@ const gameConfigData: GameConfig = {
     initialStats: {
       userHp: 100,
       bossHp: 80,
-      timeLimit: 90,
       combo: 1
     },
     damage: {
       minDamage: 10,
       maxDamage: 25,
-      timeoutPenalty: 25,
       poorAnswerPenalty: 15
-    },
-    scoring: {
-      damageMultiplier: 10,
-      comboMultiplier: 1
     },
     combo: {
       increaseThreshold: 15,
       decreaseThreshold: 8,
       maxCombo: 5
     },
-    starCalculation: {
-      baseStars: 1,
-      scoreThreshold: 500,
-      maxStars: 3
-    }
   },
   timing: {
-    gameEndDelay: 2000,
-    timerInterval: 1000
+    gameEndDelay: 2000
   }
 };
 

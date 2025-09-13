@@ -80,14 +80,9 @@ export function WinLossScreen({ result, level, score, stars, onContinue, onRetry
             </div>
           </div>
 
-          {/* Score and Stats */}
-          <div className="grid grid-cols-2 gap-6">
-            <div className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
-              <div className="text-3xl font-bold text-white/95">{score.toLocaleString()}</div>
-              <div className="text-white/60">Final Score</div>
-            </div>
-            
-            {isVictory && (
+          {/* Performance Stats - only show stars for victory */}
+          {isVictory && (
+            <div className="flex justify-center">
               <div className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
                 <div className="flex justify-center gap-1 mb-2">
                   {[1, 2, 3].map((star) => (
@@ -103,8 +98,8 @@ export function WinLossScreen({ result, level, score, stars, onContinue, onRetry
                 </div>
                 <div className="text-white/60">Performance</div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Performance Message */}
           <div className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
@@ -138,12 +133,6 @@ export function WinLossScreen({ result, level, score, stars, onContinue, onRetry
             </button>
           </div>
 
-          {/* Progress Hint */}
-          {isVictory && (
-            <div className="text-white/50 text-sm">
-              🎯 Level unlocked! New challenges await you on the map.
-            </div>
-          )}
         </div>
       </div>
     </div>

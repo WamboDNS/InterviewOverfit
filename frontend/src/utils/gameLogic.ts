@@ -12,10 +12,6 @@ export class GameLogic {
     return Math.floor(Math.random() * (maxDamage - minDamage + 1)) + minDamage;
   }
 
-  calculateScore(damage: number, combo: number): number {
-    const { damageMultiplier, comboMultiplier } = this.config.gameMechanics.scoring;
-    return damage * combo * damageMultiplier * comboMultiplier;
-  }
 
   calculateCombo(currentCombo: number, damage: number): number {
     const { increaseThreshold, decreaseThreshold, maxCombo } = this.config.gameMechanics.combo;
@@ -28,16 +24,9 @@ export class GameLogic {
     return currentCombo;
   }
 
-  calculateStars(finalScore: number): number {
-    const { baseStars, scoreThreshold, maxStars } = this.config.gameMechanics.starCalculation;
-    return Math.min(baseStars + Math.floor(finalScore / scoreThreshold), maxStars);
-  }
 
-  applyPenalty(currentHp: number, penaltyType: 'timeout' | 'poorAnswer'): number {
-    const penalty = penaltyType === 'timeout' 
-      ? this.config.gameMechanics.damage.timeoutPenalty
-      : this.config.gameMechanics.damage.poorAnswerPenalty;
-    
+  applyPenalty(currentHp: number, penaltyType: 'poorAnswer'): number {
+    const penalty = this.config.gameMechanics.damage.poorAnswerPenalty;
     return Math.max(0, currentHp - penalty);
   }
 

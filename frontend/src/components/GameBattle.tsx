@@ -22,35 +22,19 @@ export function GameBattle({ level, onComplete, onBack }: GameBattleProps) {
   // Game state - initialized from config
   const [bossHp, setBossHp] = useState(initialStats.bossHp);
   const [userHp, setUserHp] = useState(initialStats.userHp);
-  const [timeLeft, setTimeLeft] = useState(initialStats.timeLimit);
-  const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(initialStats.combo);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
 
-  // Timer countdown - using config timing
-  useEffect(() => {
-    if (timeLeft > 0 && bossHp > 0 && userHp > 0) {
-      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), config.timing.timerInterval);
-      return () => clearTimeout(timer);
-    } else if (timeLeft === 0) {
-      // Time's up - apply penalty from config
-      const newUserHp = gameLogic.applyPenalty(userHp, 'timeout');
-      setUserHp(newUserHp);
-      setTimeLeft(initialStats.timeLimit);
-      setCombo(initialStats.combo);
-    }
-  }, [timeLeft, bossHp, userHp, config, gameLogic, initialStats]);
 
   // Check for game end - using config timing
   useEffect(() => {
     if (bossHp <= 0) {
-      const stars = gameLogic.calculateStars(score);
-      setTimeout(() => onComplete('victory', score, stars), config.timing.gameEndDelay);
+      setTimeout(() => onComplete('victory', 0, 1), config.timing.gameEndDelay);
     } else if (userHp <= 0) {
-      setTimeout(() => onComplete('defeat', score, 0), config.timing.gameEndDelay);
+      setTimeout(() => onComplete('defeat', 0, 0), config.timing.gameEndDelay);
     }
-  }, [bossHp, userHp, score, onComplete, gameLogic, config]);
+  }, [bossHp, userHp, onComplete, config]);
 
   const evaluateAnswer = (content: string): number => {
     // Use game logic to calculate damage from config
@@ -75,17 +59,11 @@ export function GameBattle({ level, onComplete, onBack }: GameBattleProps) {
     const totalDamage = damage * combo;
     const newBossHp = Math.max(0, bossHp - totalDamage);
     setBossHp(newBossHp);
-
-    // Update score using game logic
-    const scoreIncrease = gameLogic.calculateScore(damage, combo);
-    setScore(prev => prev + scoreIncrease);
     
     // Update combo using game logic
     const newCombo = gameLogic.calculateCombo(combo, damage);
     setCombo(newCombo);
 
-    // Reset timer using config
-    setTimeLeft(initialStats.timeLimit);
   };
 
   const gameOver = bossHp <= 0 || userHp <= 0;
@@ -124,6 +102,7 @@ export function GameBattle({ level, onComplete, onBack }: GameBattleProps) {
             bossHp={bossHp}
             maxBossHp={initialStats.bossHp}
             currentQuestion=""
+            bossAvatar={level.boss.avatar}
           />
         </div>
 
@@ -137,9 +116,9 @@ export function GameBattle({ level, onComplete, onBack }: GameBattleProps) {
           <HUD
             userHp={userHp}
             maxUserHp={initialStats.userHp}
-            timeLeft={timeLeft}
-            maxTime={initialStats.timeLimit}
-            score={score}
+            timeLeft={0}
+            maxTime={0}
+            score={0}
             combo={combo}
           />
         </div>
