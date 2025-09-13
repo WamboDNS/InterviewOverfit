@@ -355,4 +355,4 @@ if __name__ == "__main__":
     print("🏥 Health Check: http://localhost:8000/health")
     print("🛑 Press Ctrl+C to stop")
     
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)

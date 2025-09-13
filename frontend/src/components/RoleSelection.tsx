@@ -10,7 +10,7 @@ export function RoleSelection({ onSelectRole }: RoleSelectionProps) {
   const roles: Role[] = ['SDE'];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black p-4 relative overflow-hidden">
+    <div className="min-h-screen max-h-screen bg-gradient-to-br from-black via-gray-900 to-black p-4 relative overflow-hidden">
       {/* Background pattern */}
       <div className="fixed inset-0">
         <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
@@ -25,42 +25,42 @@ export function RoleSelection({ onSelectRole }: RoleSelectionProps) {
         />
       </div>
 
-      <div className="relative z-10 max-w-6xl mx-auto py-12">
+      <div className="relative z-10 max-w-6xl mx-auto py-8 lg:py-12 h-full flex flex-col overflow-y-auto">
         {/* Header */}
-        <div className="text-center mb-16 space-y-4">
-          <h1 className="text-5xl font-bold text-white/95">Software Development Engineer</h1>
-          <p className="text-white/70 text-xl max-w-2xl mx-auto">
+        <div className="text-center mb-12 lg:mb-16 space-y-4">
+          <h1 className="text-3xl lg:text-5xl font-bold text-white/95">Software Development Engineer</h1>
+          <p className="text-white/70 text-lg lg:text-xl max-w-2xl mx-auto">
             Master the art of software engineering through challenging technical interviews
           </p>
         </div>
 
         {/* Role Cards */}
-        <div className="flex justify-center px-4">
+        <div className="flex justify-center px-2 lg:px-4 flex-1 items-center">
           {roles.map((roleId) => {
             const role = gameData[roleId];
             return (
               <div
                 key={roleId}
                 onClick={() => onSelectRole(roleId)}
-                className="group relative p-8 bg-black/40 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl cursor-pointer transition-all duration-300 hover:scale-105 hover:border-white/40 max-w-md"
+                className="group relative p-6 lg:p-8 bg-black/40 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl cursor-pointer transition-all duration-300 hover:scale-105 hover:border-white/40 max-w-md w-full"
               >
                 {/* Glass effect overlay */}
                 <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-white/2 rounded-3xl" />
                 
-                <div className="relative z-10 text-center space-y-6">
+                <div className="relative z-10 text-center space-y-4 lg:space-y-6">
                   {/* Icon */}
-                  <div className="w-20 h-20 mx-auto bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl flex items-center justify-center text-4xl group-hover:bg-white/20 transition-all duration-300">
+                  <div className="w-16 h-16 lg:w-20 lg:h-20 mx-auto bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl flex items-center justify-center text-3xl lg:text-4xl group-hover:bg-white/20 transition-all duration-300">
                     {role.icon}
                   </div>
 
                   {/* Title */}
                   <div className="space-y-2">
-                    <h3 className="text-2xl font-bold text-white/95">{role.id}</h3>
-                    <h4 className="text-lg text-white/80">{role.name}</h4>
+                    <h3 className="text-xl lg:text-2xl font-bold text-white/95">{role.id}</h3>
+                    <h4 className="text-base lg:text-lg text-white/80">{role.name}</h4>
                   </div>
 
                   {/* Description */}
-                  <p className="text-white/60 leading-relaxed">
+                  <p className="text-white/60 leading-relaxed text-sm lg:text-base">
                     {role.description}
                   </p>
 

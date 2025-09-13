@@ -11,16 +11,16 @@ export function HUD({ userHp, maxUserHp, score, combo }: HUDProps) {
   const hpPercentage = (userHp / maxUserHp) * 100;
   
   return (
-    <div className="space-y-6 p-6 bg-black/40 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl relative">
+    <div className="h-full p-4 lg:p-6 bg-black/40 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl relative overflow-hidden">
       {/* Glass effect overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-white/2 rounded-3xl" />
       
-      <div className="relative z-10 space-y-6">
+      <div className="relative z-10 h-full flex flex-col space-y-4 lg:space-y-6">
         {/* User HP */}
         <div className="space-y-3">
           <div className="flex justify-between items-center">
-            <span className="text-white/90">Your HP</span>
-            <span className="text-white/70 text-sm">{userHp}/{maxUserHp}</span>
+            <span className="text-white/90 text-sm lg:text-base">Your HP</span>
+            <span className="text-white/70 text-xs lg:text-sm">{userHp}/{maxUserHp}</span>
           </div>
           <div className="relative">
             <div className="h-3 bg-black/30 backdrop-blur-sm rounded-full overflow-hidden border border-white/10">
@@ -32,18 +32,30 @@ export function HUD({ userHp, maxUserHp, score, combo }: HUDProps) {
               </div>
             </div>
           </div>
-        </div>        {/* Combo - only show if combo > 1 */}
+        </div>
+
+        {/* Score */}
+        <div className="space-y-2">
+          <div className="text-center">
+            <span className="text-white/70 text-xs lg:text-sm">Turn Count</span>
+            <div className="text-white/95 text-xl lg:text-2xl font-bold">{score}</div>
+          </div>
+        </div>
+
+        {/* Combo - only show if combo > 1 */}
         {combo > 1 && (
-          <div className="space-y-4">
+          <div className="space-y-2">
             <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-3 animate-pulse">
               <div className="text-center">
-                <span className="text-white/70 text-sm">Combo</span>
-                <div className="text-white/95 text-lg font-bold">×{combo}</div>
+                <span className="text-white/70 text-xs lg:text-sm">Combo</span>
+                <div className="text-white/95 text-lg lg:text-xl font-bold">×{combo}</div>
               </div>
             </div>
           </div>
         )}
 
+        {/* Spacer */}
+        <div className="flex-1"></div>
       </div>
     </div>
   );

@@ -238,7 +238,7 @@ export function GameBattle({ level, onComplete, onBack }: GameBattleProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black p-4 relative overflow-hidden">
+    <div className="min-h-screen max-h-screen bg-gradient-to-br from-black via-gray-900 to-black p-2 sm:p-4 relative overflow-hidden flex flex-col">
       {/* Background pattern */}
       <div className="fixed inset-0">
         <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
@@ -253,35 +253,46 @@ export function GameBattle({ level, onComplete, onBack }: GameBattleProps) {
         />
       </div>
 
-      {/* Back button */}
-      <div className="absolute top-4 left-4 z-20">
+      {/* Header with back button and status */}
+      <div className="relative z-10 flex items-center justify-between mb-2 sm:mb-4">
         <button
           onClick={onBack}
           disabled={gameOver || loading}
-          className="px-4 py-2 bg-black/40 backdrop-blur-xl border border-white/20 rounded-xl text-white/80 hover:text-white hover:border-white/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-3 py-2 sm:px-4 sm:py-2 bg-black/40 backdrop-blur-xl border border-white/20 rounded-xl text-white/80 hover:text-white hover:border-white/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
         >
-          ← Back to Map
+          ← Back
         </button>
+        
+        {/* Game status */}
+        {gameState && (
+          <div className="bg-black/60 backdrop-blur-xl border border-white/20 rounded-xl px-3 py-2 sm:px-6 sm:py-3">
+            <p className="text-white text-xs sm:text-sm">
+              Level {gameState.level}/{gameState.max_level} • 
+              {gameState.boss_name} • 
+              Turn {gameState.turn_count}
+            </p>
+          </div>
+        )}
+        
+        {/* Error display */}
+        {error && !needsApiKey && (
+          <div className="max-w-xs sm:max-w-md">
+            <div className="bg-red-500/20 backdrop-blur-xl border border-red-500/30 rounded-xl p-3">
+              <p className="text-red-200 text-xs sm:text-sm">{error}</p>
+              <button 
+                onClick={() => setError(null)}
+                className="text-red-200 hover:text-white mt-2 text-xs underline"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Error display */}
-      {error && !needsApiKey && (
-        <div className="absolute top-4 right-4 z-20 max-w-md">
-          <div className="bg-red-500/20 backdrop-blur-xl border border-red-500/30 rounded-xl p-4">
-            <p className="text-red-200 text-sm">{error}</p>
-            <button 
-              onClick={() => setError(null)}
-              className="text-red-200 hover:text-white mt-2 text-xs underline"
-            >
-              Dismiss
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div className="relative z-10 max-w-7xl mx-auto grid grid-cols-12 gap-6 h-screen pt-16">
-        {/* Top Section - Boss Area */}
-        <div className="col-span-12">
+      <div className="relative z-10 flex-1 max-w-7xl mx-auto w-full grid grid-cols-12 gap-2 sm:gap-6 min-h-0">
+        {/* Boss Section */}
+        <div className="col-span-12 mb-2 sm:mb-4">
           <BossSection
             bossHp={gameState.boss_hp}
             maxBossHp={gameState.max_hp}
@@ -290,42 +301,33 @@ export function GameBattle({ level, onComplete, onBack }: GameBattleProps) {
           />
         </div>
 
-        {/* Middle Section - Chat Feed */}
-        <div className="col-span-8 h-96">
-          <ChatFeed messages={messages} />
+        {/* Main Game Area - Chat and HUD */}
+        <div className="col-span-12 lg:col-span-8 flex flex-col min-h-0">
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <ChatFeed messages={messages} />
+          </div>
         </div>
 
-        {/* Right Section - HUD */}
-        <div className="col-span-4 h-96">
-          <HUD
-            userHp={gameState.user_hp}
-            maxUserHp={gameState.max_hp}
-            score={gameState.turn_count}
-            combo={gameState.level}
-          />
+        {/* HUD - Side panel on large screens, bottom on small */}
+        <div className="col-span-12 lg:col-span-4 flex flex-col min-h-0">
+          <div className="flex-1 min-h-0">
+            <HUD
+              userHp={gameState.user_hp}
+              maxUserHp={gameState.max_hp}
+              score={gameState.turn_count}
+              combo={gameState.level}
+            />
+          </div>
         </div>
 
-        {/* Bottom Section - Input */}
-        <div className="col-span-12">
+        {/* Input Section */}
+        <div className="col-span-12 mt-2 sm:mt-4">
           <ChatInput
             onSendMessage={handleSendMessage}
             disabled={gameOver || loading}
           />
         </div>
       </div>
-
-      {/* Game status overlay */}
-      {gameState && (
-        <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-20">
-          <div className="bg-black/60 backdrop-blur-xl border border-white/20 rounded-xl px-6 py-3">
-            <p className="text-white text-sm">
-              Level {gameState.level}/{gameState.max_level} • 
-              {gameState.boss_name} • 
-              Turn {gameState.turn_count}
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

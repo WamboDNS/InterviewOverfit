@@ -24,7 +24,7 @@ export function ChatFeed({ messages }: ChatFeedProps) {
           <div className="ml-3 w-2 h-2 bg-white/60 rounded-full animate-pulse" />
         </div>
         
-        <ScrollArea className="h-full pr-4">
+        <ScrollArea className="h-[calc(100%-4rem)] pr-4">
           <div className="space-y-4">
             {messages.map((message) => (
               <div

@@ -141,7 +141,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen max-w-full overflow-x-hidden">
       {renderCurrentScreen()}
     </div>
   );

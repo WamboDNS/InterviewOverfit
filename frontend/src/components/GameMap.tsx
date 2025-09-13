@@ -29,7 +29,7 @@ export function GameMap({ role, onSelectLevel, onBack, progress }: GameMapProps)
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black p-4 relative overflow-hidden">
+    <div className="min-h-screen max-h-screen bg-gradient-to-br from-black via-gray-900 to-black p-4 relative overflow-hidden">
       {/* Background pattern */}
       <div className="fixed inset-0">
         <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
@@ -44,36 +44,36 @@ export function GameMap({ role, onSelectLevel, onBack, progress }: GameMapProps)
         />
       </div>
 
-      <div className="relative z-10 max-w-4xl mx-auto py-8">
+      <div className="relative z-10 max-w-6xl mx-auto py-6 lg:py-8 h-full flex flex-col overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-12">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 lg:mb-12 space-y-4 lg:space-y-0">
           <button
             onClick={onBack}
-            className="px-6 py-3 bg-black/40 backdrop-blur-xl border border-white/20 rounded-2xl text-white/80 hover:text-white hover:border-white/40 transition-all"
+            className="px-4 py-2 lg:px-6 lg:py-3 bg-black/40 backdrop-blur-xl border border-white/20 rounded-2xl text-white/80 hover:text-white hover:border-white/40 transition-all text-sm lg:text-base self-start"
           >
             ← Back to Roles
           </button>
           
           <div className="text-center">
-            <div className="flex items-center gap-4 justify-center mb-2">
-              <span className="text-4xl">{roleData.icon}</span>
-              <h1 className="text-3xl font-bold text-white/95">{roleData.name}</h1>
+            <div className="flex flex-col lg:flex-row items-center gap-2 lg:gap-4 justify-center mb-2">
+              <span className="text-3xl lg:text-4xl">{roleData.icon}</span>
+              <h1 className="text-2xl lg:text-3xl font-bold text-white/95">{roleData.name}</h1>
             </div>
-            <p className="text-white/60">Choose your challenge level</p>
+            <p className="text-white/60 text-sm lg:text-base">Choose your challenge level</p>
           </div>
           
-          <div className="w-32" /> {/* Spacer */}
+          <div className="hidden lg:block w-32" />
         </div>
 
         {/* Map Path */}
-        <div className="relative">
-          {/* Connecting Path */}
-          <div className="absolute top-1/2 left-0 right-0 h-1 bg-gradient-to-r from-white/20 via-white/40 to-white/20 transform -translate-y-1/2 rounded-full">
+        <div className="relative flex-1 flex flex-col justify-center">
+          {/* Connecting Path - Only show on larger screens */}
+          <div className="absolute top-1/2 left-0 right-0 h-1 bg-gradient-to-r from-white/20 via-white/40 to-white/20 transform -translate-y-1/2 rounded-full hidden lg:block">
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse rounded-full" />
           </div>
 
           {/* Level Nodes */}
-          <div className="flex justify-between items-center relative z-10">
+          <div className="flex flex-col lg:flex-row justify-center lg:justify-between items-center space-y-8 lg:space-y-0 relative z-10">
             {roleData.levels.map((level, index) => {
               const accessible = isLevelAccessible(level, index);
               const completed = progress[level.id]?.completed;
@@ -83,25 +83,25 @@ export function GameMap({ role, onSelectLevel, onBack, progress }: GameMapProps)
                   {/* Node */}
                   <div
                     onClick={() => accessible && onSelectLevel(level)}
-                    className={`relative w-32 h-32 rounded-3xl border-4 shadow-2xl cursor-pointer transition-all duration-300 ${
+                    className={`relative w-24 h-24 lg:w-32 lg:h-32 rounded-3xl border-4 shadow-2xl cursor-pointer transition-all duration-300 ${
                       accessible ? 'hover:scale-110' : 'cursor-not-allowed'
                     } ${getLevelColor(level, index)} ${getLevelBorderColor(level, index)}`}
                   >
                     {/* Glass effect */}
                     <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-white/5 rounded-3xl" />
                     
-                    <div className="relative z-10 h-full flex flex-col items-center justify-center text-center p-4">
+                    <div className="relative z-10 h-full flex flex-col items-center justify-center text-center p-2 lg:p-4">
                       {/* Boss Avatar */}
-                      <div className="text-3xl mb-2">{level.boss.avatar}</div>
+                      <div className="text-2xl lg:text-3xl mb-1 lg:mb-2">{level.boss.avatar}</div>
                       
                       {/* Level Number */}
-                      <div className="text-white font-bold text-sm">
+                      <div className="text-white font-bold text-xs lg:text-sm">
                         Level {index + 1}
                       </div>
                       
                       {/* Completion Status */}
                       {completed && (
-                        <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm">
+                        <div className="absolute -top-1 -right-1 lg:-top-2 lg:-right-2 w-6 h-6 lg:w-8 lg:h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-xs lg:text-sm">
                           ✓
                         </div>
                       )}
@@ -109,16 +109,16 @@ export function GameMap({ role, onSelectLevel, onBack, progress }: GameMapProps)
                       {/* Lock for inaccessible levels */}
                       {!accessible && (
                         <div className="absolute inset-0 bg-black/60 rounded-3xl flex items-center justify-center">
-                          <span className="text-white/60 text-2xl">🔒</span>
+                          <span className="text-white/60 text-xl lg:text-2xl">🔒</span>
                         </div>
                       )}
                     </div>
                   </div>
 
                   {/* Level Info */}
-                  <div className="text-center space-y-2">
-                    <h3 className="text-white/90 font-bold">{level.name}</h3>
-                    <p className="text-white/60 text-sm capitalize">{level.level}</p>
+                  <div className="text-center space-y-1 lg:space-y-2 max-w-32 lg:max-w-none">
+                    <h3 className="text-white/90 font-bold text-sm lg:text-base">{level.name}</h3>
+                    <p className="text-white/60 text-xs lg:text-sm capitalize">{level.level}</p>
                     
                     {/* Boss Name */}
                     <p className="text-white/50 text-xs">
@@ -132,24 +132,24 @@ export function GameMap({ role, onSelectLevel, onBack, progress }: GameMapProps)
         </div>
 
         {/* Progress Summary */}
-        <div className="mt-16 text-center space-y-6">
-          <div className="bg-black/40 backdrop-blur-xl border border-white/20 rounded-3xl p-6 max-w-2xl mx-auto">
+        <div className="mt-8 lg:mt-16 text-center">
+          <div className="bg-black/40 backdrop-blur-xl border border-white/20 rounded-3xl p-4 lg:p-6 max-w-2xl mx-auto relative">
             <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-white/2 rounded-3xl" />
             
             <div className="relative z-10">
-              <h3 className="text-white/90 font-bold mb-4">Your Progress</h3>
-              <div className="grid grid-cols-2 gap-6 text-center">
+              <h3 className="text-white/90 font-bold mb-3 lg:mb-4 text-sm lg:text-base">Your Progress</h3>
+              <div className="grid grid-cols-2 gap-4 lg:gap-6 text-center">
                 <div>
-                  <div className="text-2xl font-bold text-white/95">
+                  <div className="text-xl lg:text-2xl font-bold text-white/95">
                     {Object.values(progress).filter(p => p.completed).length}
                   </div>
-                  <div className="text-white/60 text-sm">Levels Completed</div>
+                  <div className="text-white/60 text-xs lg:text-sm">Levels Completed</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-white/95">
+                  <div className="text-xl lg:text-2xl font-bold text-white/95">
                     {Math.round((Object.values(progress).filter(p => p.completed).length / roleData.levels.length) * 100)}%
                   </div>
-                  <div className="text-white/60 text-sm">Completion</div>
+                  <div className="text-white/60 text-xs lg:text-sm">Completion</div>
                 </div>
               </div>
             </div>
