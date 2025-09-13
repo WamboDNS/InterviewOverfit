@@ -1,0 +1,3 @@
+fastapi
+uvicorn
+anthropic  # Remove if not used, add if your InterviewBossGame uses it
