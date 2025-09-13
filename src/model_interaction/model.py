@@ -310,10 +310,9 @@ Now evaluate this answer and respond as {boss_info['name']}. Remember:
                 if not self.victory:
                     status_msg = "\n🎯 Boss defeated! Moving to next level..."
             elif self.user_hp <= 0:
-                self.reset_game()
-                # Automatically start a new game after defeat
-                self.start_new_game()
-                status_msg = "\n💀 You were defeated! New game started..."
+                self.game_over = True
+                self.victory = False
+                status_msg = "\n💀 You were defeated! Game over."
 
             return f"""<score>{score:+d}</score>
 {feedback}

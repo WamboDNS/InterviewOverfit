@@ -699,11 +699,45 @@ def main():
                                 render_feedback(score, feedback)
                                 
                                 # Update game state
-                                st.session_state.game_state = result.get('game_state')
+                                new_game_state = result.get('game_state')
+                                st.session_state.game_state = new_game_state
                                 
-                                # Add next question to history if game continues
-                                if not result.get('game_state', {}).get('game_over', False) and next_question:
-                                    add_chat_message("boss", next_question)
+                                # Check if player was defeated (game over but not victory)
+                                if new_game_state.get('game_over', False) and not new_game_state.get('victory', False):
+                                    # Player was defeated - automatically trigger "New Game" button logic
+                                    st.info("💀 You were defeated! Starting a new game...")
+                                    
+                                    # Clear chat history for fresh start
+                                    st.session_state.chat_messages = []
+                                    
+                                    # Start new game (same logic as "New Game" button)
+                                    with st.spinner("Starting new game..."):
+                                        # End current game first
+                                        make_api_request(f"/game/{user_id}", "DELETE")
+                                        # Start new game
+                                        data = {"api_key": api_key} if api_key else {}
+                                        new_result = make_api_request(f"/game/{user_id}/start", "POST", data)
+                                        if new_result and new_result.get('success'):
+                                            st.session_state.game_state = new_result.get('game_state')
+                                            
+                                            # Add initial boss message
+                                            first_question = new_result.get('game_state', {}).get('current_question', '')
+                                            if first_question:
+                                                add_chat_message("boss", first_question)
+                                            
+                                            st.success("New game started!")
+                                        else:
+                                            st.error("Failed to start new game")
+                                    
+                                    # Clear the answer field
+                                    st.session_state.current_answer = ""
+                                    st.session_state.answer_counter += 1
+                                    
+                                    st.rerun()
+                                else:
+                                    # Normal game flow - add next question if game continues
+                                    if not new_game_state.get('game_over', False) and next_question:
+                                        add_chat_message("boss", next_question)
                                 
                                 # Clear the answer field for the next question
                                 st.session_state.current_answer = ""
