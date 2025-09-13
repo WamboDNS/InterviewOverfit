@@ -331,6 +331,8 @@ if 'current_answer' not in st.session_state:
     st.session_state.current_answer = ""
 if 'chat_messages' not in st.session_state:
     st.session_state.chat_messages = []
+if 'sidebar_visible' not in st.session_state:
+    st.session_state.sidebar_visible = True
 
 def make_api_request(endpoint: str, method: str = "GET", data: Optional[Dict] = None) -> Optional[Dict]:
     """Make API request to backend with error handling."""
@@ -545,25 +547,36 @@ def main():
     </div>
     """, unsafe_allow_html=True)
     
-    # Sidebar for configuration
-    with st.sidebar:
-        st.markdown("## ⚙️ Configuration")
+    # Collapsible settings section
+    with st.expander("⚙️ Settings & Controls", expanded=st.session_state.sidebar_visible):
+        col1, col2 = st.columns(2)
         
-        # User ID input
-        user_id = st.text_input("User ID", value=st.session_state.user_id, help="Your unique user identifier")
-        st.session_state.user_id = user_id
+        with col1:
+            # User ID input
+            user_id = st.text_input("User ID", value=st.session_state.user_id, help="Your unique user identifier")
+            st.session_state.user_id = user_id
+            
+            # API Key input (optional)
+            api_key = st.text_input("API Key (Optional)", value=st.session_state.api_key, type="password", 
+                                   help="Optional API key for enhanced features")
+            st.session_state.api_key = api_key
         
-        # API Key input (optional)
-        api_key = st.text_input("API Key (Optional)", value=st.session_state.api_key, type="password", 
-                               help="Optional API key for enhanced features")
-        st.session_state.api_key = api_key
+        with col2:
+            # Backend status
+            st.markdown("### 🔗 Backend Status")
+            if st.button("Check Connection"):
+                result = make_api_request("/health")
+                if result:
+                    st.success("✅ Backend Connected")
+                else:
+                    st.error("❌ Backend Disconnected")
         
         st.markdown("---")
         
         # Game controls
-        st.markdown("## 🎮 Game Controls")
+        st.markdown("### 🎮 Game Controls")
         
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         with col1:
             if st.button("🚀 Start Game", use_container_width=True):
                 with st.spinner("Starting new game..."):
@@ -601,28 +614,18 @@ def main():
                     else:
                         st.error("Failed to reset game")
         
-        if st.button("🗑️ End Game", use_container_width=True):
-            with st.spinner("Ending game..."):
-                result = make_api_request(f"/game/{user_id}", "DELETE")
-                if result and result.get('success'):
-                    st.session_state.game_state = None
-                    st.session_state.conversation_history = []
-                    st.session_state.chat_messages = []
-                    st.success("Game ended!")
-                    st.rerun()
-                else:
-                    st.error("Failed to end game")
-        
-        st.markdown("---")
-        
-        # Backend status
-        st.markdown("## 🔗 Backend Status")
-        if st.button("Check Connection"):
-            result = make_api_request("/health")
-            if result:
-                st.success("✅ Backend Connected")
-            else:
-                st.error("❌ Backend Disconnected")
+        with col3:
+            if st.button("🗑️ End Game", use_container_width=True):
+                with st.spinner("Ending game..."):
+                    result = make_api_request(f"/game/{user_id}", "DELETE")
+                    if result and result.get('success'):
+                        st.session_state.game_state = None
+                        st.session_state.conversation_history = []
+                        st.session_state.chat_messages = []
+                        st.success("Game ended!")
+                        st.rerun()
+                    else:
+                        st.error("Failed to end game")
     
     # Main content area
     if not st.session_state.game_state:
