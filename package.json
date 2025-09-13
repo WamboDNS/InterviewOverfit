@@ -1,19 +1,21 @@
 {
-  "name": "interview-boss-battle-client",
+  "name": "interview-overfit",
   "version": "1.0.0",
-  "description": "Node.js client for Interview Boss Battle API",
-  "main": "nodejs-example.js",
+  "description": "Interview preparation game with boss battles",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
   "scripts": {
-    "start": "node nodejs-example.js",
-    "test-api": "node -e \"require('./nodejs-example.js').InterviewBossGameClient; console.log('Client loaded successfully!');\""
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "install:frontend": "cd frontend && npm install",
+    "install:backend": "cd back-end && pip install -e .",
+    "install:all": "npm run install:frontend && npm run install:backend",
+    "start:frontend": "cd frontend && npm run dev",
+    "start:backend": "cd back-end && python main.py"
   },
-  "keywords": ["interview", "game", "api", "client"],
-  "author": "Interview Boss Battle",
-  "license": "MIT",
-  "dependencies": {
-    "node-fetch": "^2.6.7"
-  },
-  "engines": {
-    "node": ">=14.0.0"
+  "devDependencies": {
+    "concurrently": "^8.2.2"
   }
 }
