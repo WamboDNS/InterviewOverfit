@@ -16,7 +16,4 @@ export interface GameConfig {
       maxCombo: number;
     };
   };
-  timing: {
-    gameEndDelay: number;
-  };
 }

@@ -3,15 +3,12 @@ import React from "react";
 interface HUDProps {
   userHp: number;
   maxUserHp: number;
-  timeLeft: number;
-  maxTime: number;
   score: number;
   combo: number;
 }
 
-export function HUD({ userHp, maxUserHp, timeLeft, maxTime, score, combo }: HUDProps) {
+export function HUD({ userHp, maxUserHp, score, combo }: HUDProps) {
   const hpPercentage = (userHp / maxUserHp) * 100;
-  const timePercentage = (timeLeft / maxTime) * 100;
   
   return (
     <div className="space-y-6 p-6 bg-black/40 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl relative">
@@ -35,46 +32,7 @@ export function HUD({ userHp, maxUserHp, timeLeft, maxTime, score, combo }: HUDP
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Timer - only show if maxTime > 0 */}
-        {maxTime > 0 && (
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-white/90">Time</span>
-              <span className="text-white/70 text-sm">{Math.ceil(timeLeft)}s</span>
-            </div>
-            
-            {/* Circular Timer */}
-            <div className="relative w-24 h-24 mx-auto">
-              <div className="absolute inset-0 rounded-full border-2 border-white/10 bg-black/20 backdrop-blur-sm" />
-              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="45"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                  strokeLinecap="round"
-                  strokeDasharray={`${timePercentage * 2.83} 283`}
-                  className={`transition-all duration-1000 ${
-                    timePercentage > 30 ? 'text-white/80' : 'text-white/40'
-                  }`}
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className={`text-lg font-bold ${
-                  timePercentage > 30 ? 'text-white/90' : 'text-white/60'
-                }`}>
-                  {Math.ceil(timeLeft)}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Combo - only show if combo > 1 */}
+        </div>        {/* Combo - only show if combo > 1 */}
         {combo > 1 && (
           <div className="space-y-4">
             <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-3 animate-pulse">

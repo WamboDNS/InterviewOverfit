@@ -10,16 +10,6 @@ export const initializeGameProgress = (): GameProgress => {
         levelsCompleted: 0,
         totalStars: 0,
         unlockedLevels: ['sde-beginner']
-      },
-      DS: {
-        levelsCompleted: 0,
-        totalStars: 0,
-        unlockedLevels: ['ds-beginner']
-      },
-      MLE: {
-        levelsCompleted: 0,
-        totalStars: 0,
-        unlockedLevels: ['mle-beginner']
       }
     }
   };

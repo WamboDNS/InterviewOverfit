@@ -27,14 +27,14 @@ export function GameBattle({ level, onComplete, onBack }: GameBattleProps) {
 
 
 
-  // Check for game end - using config timing
+  // Check for game end
   useEffect(() => {
     if (bossHp <= 0) {
-      setTimeout(() => onComplete('victory', 0, 1), config.timing.gameEndDelay);
+      onComplete('victory', 0, 1);
     } else if (userHp <= 0) {
-      setTimeout(() => onComplete('defeat', 0, 0), config.timing.gameEndDelay);
+      onComplete('defeat', 0, 0);
     }
-  }, [bossHp, userHp, onComplete, config]);
+  }, [bossHp, userHp, onComplete]);
 
   const evaluateAnswer = (content: string): number => {
     // Use game logic to calculate damage from config
@@ -116,8 +116,6 @@ export function GameBattle({ level, onComplete, onBack }: GameBattleProps) {
           <HUD
             userHp={userHp}
             maxUserHp={initialStats.userHp}
-            timeLeft={0}
-            maxTime={0}
             score={0}
             combo={combo}
           />

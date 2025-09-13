@@ -33,8 +33,4 @@ export class GameLogic {
   getInitialStats() {
     return this.config.gameMechanics.initialStats;
   }
-
-  getTiming() {
-    return this.config.timing;
-  }
 }
