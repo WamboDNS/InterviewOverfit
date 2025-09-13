@@ -23,7 +23,6 @@ class InterviewBossGame:
     # ==================== GAME CONFIGURATION ====================
     
     MAX_LEVEL = 3
-    MAX_HP = 1
     SCORE_RANGE = (-10, 10)
     
     # ==================== BOSS DEFINITIONS ====================
@@ -124,8 +123,8 @@ Always stay in character as the current boss and make the feedback engaging and 
     def reset_game(self) -> None:
         """Reset game to initial state."""
         self.level = 1
-        self.boss_hp = self.MAX_HP
-        self.user_hp = self.MAX_HP
+        self.boss_hp = self.get_boss_max_hp()
+        self.user_hp = self.get_boss_max_hp()
         self.turn_count = 0
         self.current_question = ""
         self.game_over = False
@@ -135,6 +134,10 @@ Always stay in character as the current boss and make the feedback engaging and 
     def get_boss_info(self) -> Dict[str, str]:
         """Get current boss information."""
         return self.BOSSES.get(self.level, self.BOSSES[1])
+    
+    def get_boss_max_hp(self) -> int:
+        """Get current boss's maximum HP."""
+        return self.BOSSES.get(self.level, self.BOSSES[1])["MAX_HP"]
 
     # ==================== PROMPT GENERATION ====================
 
@@ -143,14 +146,14 @@ Always stay in character as the current boss and make the feedback engaging and 
         boss_info = self.get_boss_info()
         return f"""CURRENT GAME STATE:
 Level: {self.level}/{self.MAX_LEVEL}
-Boss: {boss_info['name']} (HP: {self.boss_hp}/{self.MAX_HP})
-Your HP: {self.user_hp}/{self.MAX_HP}
+Boss: {boss_info['name']} (HP: {self.boss_hp}/{self.get_boss_max_hp()})
+Your HP: {self.user_hp}/{self.get_boss_max_hp()}
 Turn: {self.turn_count}
 
 Boss Personality: {boss_info['personality']}
 Question Focus: {', '.join(boss_info['question_types'])}
 
-You are currently {boss_info['name']}. Ask an appropriate interview question for this level and maintain your character throughout the interaction."""
+You are currently {boss_info['name']}. Ask an appropriate interview question for this level and maintain your character throughout the interaction. Try to add code snipptes"""
 
     # ==================== SCORE PARSING ====================
 
@@ -320,7 +323,7 @@ Now evaluate this answer and respond as {boss_info['name']}. Remember:
             return f"""<score>{score:+d}</score>
 {feedback}
 {result_msg}
-Boss HP: {max(0, self.boss_hp)}/{self.MAX_HP} | Your HP: {max(0, self.user_hp)}/{self.MAX_HP}{status_msg}"""
+Boss HP: {max(0, self.boss_hp)}/{self.get_boss_max_hp()} | Your HP: {max(0, self.user_hp)}/{self.get_boss_max_hp()}{status_msg}"""
 
         except Exception as e:
             return f"Error evaluating answer: {e}"
@@ -329,14 +332,17 @@ Boss HP: {max(0, self.boss_hp)}/{self.MAX_HP} | Your HP: {max(0, self.user_hp)}/
         """Advance to next level or complete game."""
         if self.level < self.MAX_LEVEL:
             self.level += 1
-            self.boss_hp = self.MAX_HP
+            # Reset all game state for fresh start with new boss
+            self.boss_hp = self.get_boss_max_hp()
+            self.user_hp = self.get_boss_max_hp()
             self.turn_count = 0
+            self.current_question = ""
+            self.game_over = False
+            self.victory = False
+            self.conversation_history = []
+            
             boss_info = self.get_boss_info()
             print(f"🎉 Level Up! Now facing {boss_info['name']} at Level {self.level}")
-            
-            # Add level transition message to conversation
-            transition_msg = f"🎉 LEVEL UP! The candidate has defeated the previous boss and now faces {boss_info['name']} at Level {self.level}. The new boss has a fresh 100 HP and the interview continues with {boss_info['personality']}."
-            self.conversation_history.append({"role": "user", "content": transition_msg})
         else:
             self.victory = True
             self.game_over = True
@@ -350,8 +356,8 @@ Boss HP: {max(0, self.boss_hp)}/{self.MAX_HP} | Your HP: {max(0, self.user_hp)}/
         return f"""📊 GAME STATUS 📊
 Level: {self.level}/{self.MAX_LEVEL}
 Current Boss: {boss_info['name']}
-Boss HP: {self.boss_hp}/{self.MAX_HP}
-Your HP: {self.user_hp}/{self.MAX_HP}
+Boss HP: {self.boss_hp}/{self.get_boss_max_hp()}
+Your HP: {self.user_hp}/{self.get_boss_max_hp()}
 Turn: {self.turn_count}"""
 
     def get_game_state(self) -> Dict:
@@ -364,7 +370,7 @@ Turn: {self.turn_count}"""
             "boss_personality": boss_info["personality"],
             "boss_question_types": boss_info["question_types"],
             "boss_hp": self.boss_hp,
-            "max_hp": self.MAX_HP,
+            "max_hp": self.get_boss_max_hp(),
             "user_hp": self.user_hp,
             "turn_count": self.turn_count,
             "current_question": self.current_question,
@@ -405,7 +411,7 @@ Turn: {self.turn_count}"""
             # Game Configuration
             "game_config": {
                 "max_level": self.MAX_LEVEL,
-                "max_hp": self.MAX_HP,
+                "max_hp": self.get_boss_max_hp(),
                 "score_range": self.SCORE_RANGE
             },
             
