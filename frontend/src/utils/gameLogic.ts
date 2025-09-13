@@ -1,123 +1,51 @@
-import { GameProgress, Role, LevelData } from '../types/gameTypes';
-import { gameData } from '../data/gameData';
+import { GameConfig } from '../config/types';
 
-export const initializeGameProgress = (): GameProgress => {
-  const roleProgress: GameProgress['roleProgress'] = {} as any;
-  
-  (['SDE', 'DS', 'MLE'] as Role[]).forEach(role => {
-    roleProgress[role] = {
-      levelsCompleted: 0,
-      totalStars: 0,
-      unlockedLevels: [gameData[role].levels[0].id] // First level always unlocked
-    };
-  });
+export class GameLogic {
+  private config: GameConfig;
 
-  return {
-    currentRole: null,
-    currentLevel: null,
-    roleProgress
-  };
-};
-
-export const updateProgressAfterVictory = (
-  progress: GameProgress,
-  role: Role,
-  levelId: string,
-  stars: number
-): GameProgress => {
-  const newProgress = { ...progress };
-  const roleData = gameData[role];
-  const currentLevelIndex = roleData.levels.findIndex(l => l.id === levelId);
-  
-  // Update role progress
-  const currentRoleProgress = { ...newProgress.roleProgress[role] };
-  
-  // Mark level as completed if not already
-  if (!currentRoleProgress.unlockedLevels.includes(levelId)) {
-    currentRoleProgress.levelsCompleted += 1;
+  constructor(config: GameConfig) {
+    this.config = config;
   }
-  
-  // Update stars (keep the best score)
-  const existingStars = getStarsForLevel(progress, role, levelId);
-  if (stars > existingStars) {
-    currentRoleProgress.totalStars += (stars - existingStars);
-  }
-  
-  // Unlock next level if it exists
-  const nextLevel = roleData.levels[currentLevelIndex + 1];
-  if (nextLevel && !currentRoleProgress.unlockedLevels.includes(nextLevel.id)) {
-    currentRoleProgress.unlockedLevels.push(nextLevel.id);
-  }
-  
-  newProgress.roleProgress[role] = currentRoleProgress;
-  
-  return newProgress;
-};
 
-export const getStarsForLevel = (
-  progress: GameProgress,
-  role: Role,
-  levelId: string
-): number => {
-  // This would typically be stored in a more detailed progress structure
-  // For now, we'll use a simple calculation based on completion
-  const roleProgress = progress.roleProgress[role];
-  if (roleProgress.unlockedLevels.includes(levelId)) {
-    const roleData = gameData[role];
-    const levelIndex = roleData.levels.findIndex(l => l.id === levelId);
-    if (levelIndex < roleProgress.levelsCompleted) {
-      return Math.min(3, Math.max(1, Math.floor(roleProgress.totalStars / roleProgress.levelsCompleted)));
+  calculateDamage(): number {
+    const { minDamage, maxDamage } = this.config.gameMechanics.damage;
+    return Math.floor(Math.random() * (maxDamage - minDamage + 1)) + minDamage;
+  }
+
+  calculateScore(damage: number, combo: number): number {
+    const { damageMultiplier, comboMultiplier } = this.config.gameMechanics.scoring;
+    return damage * combo * damageMultiplier * comboMultiplier;
+  }
+
+  calculateCombo(currentCombo: number, damage: number): number {
+    const { increaseThreshold, decreaseThreshold, maxCombo } = this.config.gameMechanics.combo;
+    
+    if (damage >= increaseThreshold) {
+      return Math.min(currentCombo + 1, maxCombo);
+    } else if (damage < decreaseThreshold) {
+      return 1;
     }
+    return currentCombo;
   }
-  return 0;
-};
 
-export const isLevelUnlocked = (
-  progress: GameProgress,
-  role: Role,
-  levelId: string
-): boolean => {
-  return progress.roleProgress[role].unlockedLevels.includes(levelId);
-};
-
-export const getRoleCompletionPercentage = (
-  progress: GameProgress,
-  role: Role
-): number => {
-  const roleData = gameData[role];
-  const completedLevels = progress.roleProgress[role].levelsCompleted;
-  return Math.round((completedLevels / roleData.levels.length) * 100);
-};
-
-export const getTotalStarsForRole = (
-  progress: GameProgress,
-  role: Role
-): number => {
-  return progress.roleProgress[role].totalStars;
-};
-
-export const saveGameProgress = (progress: GameProgress): void => {
-  try {
-    localStorage.setItem('interviewOverfit_progress', JSON.stringify(progress));
-  } catch (error) {
-    console.error('Failed to save game progress:', error);
+  calculateStars(finalScore: number): number {
+    const { baseStars, scoreThreshold, maxStars } = this.config.gameMechanics.starCalculation;
+    return Math.min(baseStars + Math.floor(finalScore / scoreThreshold), maxStars);
   }
-};
 
-export const loadGameProgress = (): GameProgress => {
-  try {
-    const saved = localStorage.getItem('interviewOverfit_progress');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      // Ensure the structure is valid and merge with defaults if needed
-      return {
-        ...initializeGameProgress(),
-        ...parsed
-      };
-    }
-  } catch (error) {
-    console.error('Failed to load game progress:', error);
+  applyPenalty(currentHp: number, penaltyType: 'timeout' | 'poorAnswer'): number {
+    const penalty = penaltyType === 'timeout' 
+      ? this.config.gameMechanics.damage.timeoutPenalty
+      : this.config.gameMechanics.damage.poorAnswerPenalty;
+    
+    return Math.max(0, currentHp - penalty);
   }
-  
-  return initializeGameProgress();
-};
+
+  getInitialStats() {
+    return this.config.gameMechanics.initialStats;
+  }
+
+  getTiming() {
+    return this.config.timing;
+  }
+}

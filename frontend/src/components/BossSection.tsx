@@ -45,14 +45,16 @@ export function BossSection({ bossHp, maxBossHp, currentQuestion }: BossSectionP
             </div>
           </div>
 
-          {/* Boss Chat Bubble */}
-          <div className="relative">
-            <div className="bg-black/30 backdrop-blur-md border border-white/20 rounded-2xl p-4 shadow-xl relative">
-              <div className="absolute -bottom-2 left-8 w-4 h-4 bg-black/30 backdrop-blur-md border-r border-b border-white/20 rotate-45" />
-              <p className="text-white/90 leading-relaxed">{currentQuestion}</p>
-              <div className="mt-2 text-white/60 text-sm animate-pulse">▊</div>
+          {/* Boss Chat Bubble - only show if there's a question */}
+          {currentQuestion && (
+            <div className="relative">
+              <div className="bg-black/30 backdrop-blur-md border border-white/20 rounded-2xl p-4 shadow-xl relative">
+                <div className="absolute -bottom-2 left-8 w-4 h-4 bg-black/30 backdrop-blur-md border-r border-b border-white/20 rotate-45" />
+                <p className="text-white/90 leading-relaxed">{currentQuestion}</p>
+                <div className="mt-2 text-white/60 text-sm animate-pulse">▊</div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

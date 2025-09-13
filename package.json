@@ -1,0 +1,21 @@
+{
+  "name": "interview-overfit",
+  "version": "1.0.0",
+  "description": "Interview preparation game with boss battles",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "install:frontend": "cd frontend && npm install",
+    "install:backend": "cd back-end && pip install -e .",
+    "install:all": "npm run install:frontend && npm run install:backend",
+    "start:frontend": "cd frontend && npm run dev",
+    "start:backend": "cd back-end && python main.py"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

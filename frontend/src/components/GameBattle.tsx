@@ -4,7 +4,8 @@ import { BossSection } from "./BossSection";
 import { ChatFeed } from "./ChatFeed";
 import { HUD } from "./HUD";
 import { ChatInput } from "./ChatInput";
-import { getGameConfig, getGameLogic, initializeGameConfig } from "../utils/gameConfig";
+import { loadGameConfig } from "../config/loader";
+import { GameLogic } from "../utils/gameLogic";
 
 interface GameBattleProps {
   level: LevelData;
@@ -13,102 +14,51 @@ interface GameBattleProps {
 }
 
 export function GameBattle({ level, onComplete, onBack }: GameBattleProps) {
-  // Initialize game configuration
-  const [config, setConfig] = useState<any>(null);
-  const [gameLogic, setGameLogic] = useState<any>(null);
+  // Load game configuration
+  const config = loadGameConfig();
+  const gameLogic = new GameLogic(config);
+  const initialStats = gameLogic.getInitialStats();
   
-  // Game state
-  const [bossHp, setBossHp] = useState(level.boss.hp);
-  const [userHp, setUserHp] = useState(100);
-  const [timeLeft, setTimeLeft] = useState(90); // Longer time for more complex questions
+  // Game state - initialized from config
+  const [bossHp, setBossHp] = useState(initialStats.bossHp);
+  const [userHp, setUserHp] = useState(initialStats.userHp);
+  const [timeLeft, setTimeLeft] = useState(initialStats.timeLimit);
   const [score, setScore] = useState(0);
-  const [combo, setCombo] = useState(1);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "1",
-      type: "boss",
-      content: `You dare challenge ${level.boss.name}? Let's see what you're made of!`,
-      timestamp: new Date(),
-    },
-    {
-      id: "2",
-      type: "boss", 
-      content: level.boss.questions[0],
-      timestamp: new Date(),
-    },
-  ]);
+  const [combo, setCombo] = useState(initialStats.combo);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
 
-  // Initialize game configuration
-  useEffect(() => {
-    const initConfig = async () => {
-      try {
-        const gameConfig = await initializeGameConfig();
-        const logic = getGameLogic();
-        setConfig(gameConfig);
-        setGameLogic(logic);
-        
-        // Update initial state with config values
-        setUserHp(gameConfig.gameMechanics.initialStats.userHp);
-        setTimeLeft(gameConfig.gameMechanics.initialStats.timeLimit);
-        setCombo(gameConfig.gameMechanics.initialStats.combo);
-      } catch (error) {
-        console.error('Failed to initialize game configuration:', error);
-      }
-    };
-    
-    initConfig();
-  }, []);
 
-  // Timer countdown
+  // Timer countdown - using config timing
   useEffect(() => {
-    if (!config || !gameLogic) return;
-    
     if (timeLeft > 0 && bossHp > 0 && userHp > 0) {
-      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), config.timing.timerInterval);
       return () => clearTimeout(timer);
     } else if (timeLeft === 0) {
-      // Time's up - boss attacks
+      // Time's up - apply penalty from config
       const newUserHp = gameLogic.applyPenalty(userHp, 'timeout');
       setUserHp(newUserHp);
-      setTimeLeft(config.gameMechanics.initialStats.timeLimit);
-      setCombo(config.gameMechanics.initialStats.combo);
+      setTimeLeft(initialStats.timeLimit);
+      setCombo(initialStats.combo);
     }
-  }, [timeLeft, bossHp, userHp, config, gameLogic]);
+  }, [timeLeft, bossHp, userHp, config, gameLogic, initialStats]);
 
-  // Check for game end
+  // Check for game end - using config timing
   useEffect(() => {
-    if (!config || !gameLogic) return;
-    
     if (bossHp <= 0) {
-      const stars = gameLogic.calculateStars(score, userHp, timeLeft);
+      const stars = gameLogic.calculateStars(score);
       setTimeout(() => onComplete('victory', score, stars), config.timing.gameEndDelay);
     } else if (userHp <= 0) {
       setTimeout(() => onComplete('defeat', score, 0), config.timing.gameEndDelay);
     }
-  }, [bossHp, userHp, score, onComplete, config, gameLogic]);
+  }, [bossHp, userHp, score, onComplete, gameLogic, config]);
 
   const evaluateAnswer = (content: string): number => {
-    if (!gameLogic) return 0;
-    
-    const question = level.boss.questions[currentQuestionIndex];
-    const evaluationResult = gameLogic.evaluateAnswer(content, question);
-    return evaluationResult.damage;
+    // Use game logic to calculate damage from config
+    return gameLogic.calculateDamage();
   };
 
-  const getBossResponse = (damage: number): string => {
-    if (!gameLogic) return "I'm not ready yet...";
-    
-    const { responses } = level.boss;
-    const responseType = gameLogic.getBossResponseType(damage);
-    
-    return responses[responseType][Math.floor(Math.random() * responses[responseType].length)];
-  };
-
-  // Handle user messages
+  // Handle user messages - using config-driven logic
   const handleSendMessage = (content: string, isCode: boolean) => {
-    if (!config || !gameLogic) return;
-    
     // Add user message
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
@@ -120,65 +70,22 @@ export function GameBattle({ level, onComplete, onBack }: GameBattleProps) {
     
     setMessages(prev => [...prev, userMessage]);
 
-    // Calculate damage
+    // Calculate damage using game logic
     const damage = evaluateAnswer(content);
     const totalDamage = damage * combo;
     const newBossHp = Math.max(0, bossHp - totalDamage);
     setBossHp(newBossHp);
 
-    // Update score
+    // Update score using game logic
     const scoreIncrease = gameLogic.calculateScore(damage, combo);
     setScore(prev => prev + scoreIncrease);
     
-    // Update combo
+    // Update combo using game logic
     const newCombo = gameLogic.calculateCombo(combo, damage);
     setCombo(newCombo);
 
-    // Reset timer
-    setTimeLeft(config.gameMechanics.initialStats.timeLimit);
-
-    // Boss response after short delay
-    setTimeout(() => {
-      let bossResponse = "";
-      
-      if (newBossHp <= 0) {
-        bossResponse = level.boss.responses.victory;
-      } else {
-        bossResponse = getBossResponse(damage);
-        
-        // Boss counter-attacks on poor answers
-        if (damage < config.evaluation.damageThresholds.poor) {
-          const newUserHp = gameLogic.applyPenalty(userHp, 'poorAnswer');
-          setUserHp(newUserHp);
-        }
-      }
-
-      const bossMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        type: "boss",
-        content: bossResponse,
-        timestamp: new Date(),
-      };
-
-      setMessages(prev => [...prev, bossMessage]);
-
-      // Next question if boss is still alive
-      if (newBossHp > 0) {
-        setTimeout(() => {
-          const nextQuestionIndex = (currentQuestionIndex + 1) % level.boss.questions.length;
-          setCurrentQuestionIndex(nextQuestionIndex);
-          
-          const questionMessage: ChatMessage = {
-            id: (Date.now() + 2).toString(),
-            type: "boss",
-            content: level.boss.questions[nextQuestionIndex],
-            timestamp: new Date(),
-          };
-          
-          setMessages(prev => [...prev, questionMessage]);
-        }, config.timing.nextQuestionDelay);
-      }
-    }, config.timing.bossResponseDelay);
+    // Reset timer using config
+    setTimeLeft(initialStats.timeLimit);
   };
 
   const gameOver = bossHp <= 0 || userHp <= 0;
@@ -215,8 +122,8 @@ export function GameBattle({ level, onComplete, onBack }: GameBattleProps) {
         <div className="col-span-12">
           <BossSection
             bossHp={bossHp}
-            maxBossHp={level.boss.hp}
-            currentQuestion={level.boss.questions[currentQuestionIndex]}
+            maxBossHp={initialStats.bossHp}
+            currentQuestion=""
           />
         </div>
 
@@ -229,9 +136,9 @@ export function GameBattle({ level, onComplete, onBack }: GameBattleProps) {
         <div className="col-span-4 h-96">
           <HUD
             userHp={userHp}
-            maxUserHp={config?.gameMechanics.initialStats.userHp || 100}
+            maxUserHp={initialStats.userHp}
             timeLeft={timeLeft}
-            maxTime={config?.gameMechanics.initialStats.timeLimit || 90}
+            maxTime={initialStats.timeLimit}
             score={score}
             combo={combo}
           />

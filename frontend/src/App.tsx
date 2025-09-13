@@ -11,7 +11,7 @@ import {
   saveGameProgress, 
   loadGameProgress,
   getStarsForLevel 
-} from "./utils/gameLogic";
+} from "./utils/gameProgress";
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<GameScreen>('loading');
