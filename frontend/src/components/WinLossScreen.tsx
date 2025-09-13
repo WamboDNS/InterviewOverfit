@@ -5,12 +5,11 @@ interface WinLossScreenProps {
   result: 'victory' | 'defeat';
   level: LevelData;
   score: number;
-  stars: number;
   onContinue: () => void;
   onRetry?: () => void;
 }
 
-export function WinLossScreen({ result, level, score, stars, onContinue, onRetry }: WinLossScreenProps) {
+export function WinLossScreen({ result, level, score, onContinue, onRetry }: WinLossScreenProps) {
   const isVictory = result === 'victory';
 
   return (
@@ -80,33 +79,10 @@ export function WinLossScreen({ result, level, score, stars, onContinue, onRetry
             </div>
           </div>
 
-          {/* Performance Stats - only show stars for victory */}
-          {isVictory && (
-            <div className="flex justify-center">
-              <div className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
-                <div className="flex justify-center gap-1 mb-2">
-                  {[1, 2, 3].map((star) => (
-                    <span
-                      key={star}
-                      className={`text-2xl ${
-                        star <= stars ? 'text-yellow-400' : 'text-gray-500'
-                      }`}
-                    >
-                      ⭐
-                    </span>
-                  ))}
-                </div>
-                <div className="text-white/60">Performance</div>
-              </div>
-            </div>
-          )}
-
           {/* Performance Message */}
           <div className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
             <p className="text-white/80 text-lg leading-relaxed">
               {isVictory ? (
-                stars === 3 ? "Perfect execution! You've mastered this level completely!" :
-                stars === 2 ? "Great job! You showed strong understanding and skill!" :
                 "Well done! You've proven your capabilities and defeated the boss!"
               ) : (
                 "Don't give up! Every defeat is a learning opportunity. Study the questions and try again!"

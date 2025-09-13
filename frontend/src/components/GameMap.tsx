@@ -6,7 +6,7 @@ interface GameMapProps {
   role: Role;
   onSelectLevel: (level: LevelData) => void;
   onBack: () => void;
-  progress: Record<string, { completed: boolean; stars: number }>;
+  progress: Record<string, { completed: boolean }>;
 }
 
 export function GameMap({ role, onSelectLevel, onBack, progress }: GameMapProps) {
@@ -77,7 +77,6 @@ export function GameMap({ role, onSelectLevel, onBack, progress }: GameMapProps)
             {roleData.levels.map((level, index) => {
               const accessible = isLevelAccessible(level, index);
               const completed = progress[level.id]?.completed;
-              const stars = progress[level.id]?.stars || 0;
 
               return (
                 <div key={level.id} className="flex flex-col items-center space-y-4">
@@ -121,22 +120,6 @@ export function GameMap({ role, onSelectLevel, onBack, progress }: GameMapProps)
                     <h3 className="text-white/90 font-bold">{level.name}</h3>
                     <p className="text-white/60 text-sm capitalize">{level.level}</p>
                     
-                    {/* Stars */}
-                    {completed && (
-                      <div className="flex justify-center gap-1">
-                        {[1, 2, 3].map((star) => (
-                          <span
-                            key={star}
-                            className={`text-sm ${
-                              star <= stars ? 'text-yellow-400' : 'text-gray-500'
-                            }`}
-                          >
-                            ⭐
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    
                     {/* Boss Name */}
                     <p className="text-white/50 text-xs">
                       vs {level.boss.name}
@@ -155,18 +138,12 @@ export function GameMap({ role, onSelectLevel, onBack, progress }: GameMapProps)
             
             <div className="relative z-10">
               <h3 className="text-white/90 font-bold mb-4">Your Progress</h3>
-              <div className="grid grid-cols-3 gap-6 text-center">
+              <div className="grid grid-cols-2 gap-6 text-center">
                 <div>
                   <div className="text-2xl font-bold text-white/95">
                     {Object.values(progress).filter(p => p.completed).length}
                   </div>
                   <div className="text-white/60 text-sm">Levels Completed</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-white/95">
-                    {Object.values(progress).reduce((sum, p) => sum + (p.stars || 0), 0)}
-                  </div>
-                  <div className="text-white/60 text-sm">Total Stars</div>
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-white/95">

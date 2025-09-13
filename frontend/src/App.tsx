@@ -130,7 +130,6 @@ export default function App() {
             result={battleResult.result}
             level={selectedLevel}
             score={battleResult.score}
-            stars={battleResult.stars}
             onContinue={handleWinLossContinue}
             onRetry={battleResult.result === 'defeat' ? handleRetryBattle : undefined}
           />

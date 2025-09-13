@@ -18,9 +18,6 @@ const gameConfigData: GameConfig = {
       decreaseThreshold: 8,
       maxCombo: 5
     },
-  },
-  timing: {
-    gameEndDelay: 2000
   }
 };
 

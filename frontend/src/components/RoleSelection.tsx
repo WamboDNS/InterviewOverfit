@@ -98,18 +98,6 @@ export function RoleSelection({ onSelectRole }: RoleSelectionProps) {
             );
           })}
         </div>
-
-        {/* Footer */}
-        <div className="text-center mt-16 space-y-4">
-          <p className="text-white/50">
-            Master 3 challenging levels with unique boss encounters
-          </p>
-          <div className="flex justify-center gap-8 text-sm text-white/40">
-            <span>🟢 Beginner</span>
-            <span>🟡 Intermediate</span>
-            <span>🔴 Expert</span>
-          </div>
-        </div>
       </div>
     </div>
   );
