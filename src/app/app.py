@@ -9,13 +9,14 @@ from typing import Optional, Dict, Any
 from pathlib import Path
 import json
 import os
+import re
 from datetime import datetime
 
-from dataloader.jston_store import JsonStore, UserData
-from interview_engine.interview_session import (
+from src.dataloader.jston_store import JsonStore, UserData
+from src.interview_engine.interview_session import (
     SessionStore, InterviewSession, ChatMessage, AttemptSummary
 )
-from model_interaction.model import InterviewBossGame
+from src.model_interaction.model import InterviewBossGame
 
 app = FastAPI(title="InterviewOverfit API", version="0.1.0")
 
@@ -321,21 +322,17 @@ def submit_answer(
         score = 0
         feedback = response
         
-
         try:
-            score_match = re.search(r'<score>\s*([+-]?\d+)\s*</score>', first_line)
-
+            # Try to extract score from response
+            score_match = re.search(r'<score>\s*([+-]?\d+)\s*</score>', response)
             if score_match:
                 score = int(score_match.group(1))
                 # Clamp the score to the allowed range [-10, 10]
                 score = max(-10, min(10, score))
-                feedback = '\n'.join(lines[1:]).strip() if len(lines) > 1 else "No feedback provided."
-                return score, feedback
+                # Remove score tags from feedback
+                feedback = re.sub(r'<score>\s*[+-]?\d+\s*</score>', '', response).strip()
         except:
             pass
-        
-        feedback = response.split("</END_SCORE>")
-        feedback = feedback[1].strip()
         
         # If game is over, clean up the instance
         if game.game_over:
