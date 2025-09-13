@@ -1,4 +1,4 @@
-export type Role = 'SDE' | 'DS' | 'MLE';
+export type Role = 'SDE';
 export type Level = 'beginner' | 'intermediate' | 'expert';
 export type GameScreen = 'loading' | 'roleSelection' | 'map' | 'battle' | 'winLoss';
 
@@ -52,7 +52,6 @@ export interface GameState {
   battleState: {
     bossHp: number;
     userHp: number;
-    timeLeft: number;
     score: number;
     combo: number;
     messages: ChatMessage[];

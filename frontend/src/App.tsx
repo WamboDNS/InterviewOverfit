@@ -14,7 +14,7 @@ import {
 } from "./utils/gameProgress";
 
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState<GameScreen>('loading');
+  const [currentScreen, setCurrentScreen] = useState<GameScreen>('roleSelection');
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<LevelData | null>(null);
   const [gameProgress, setGameProgress] = useState<GameProgress>(() => loadGameProgress());
@@ -31,12 +31,12 @@ export default function App() {
 
   // Screen transition handlers
   const handleLoadingComplete = () => {
-    setCurrentScreen('roleSelection');
+    setCurrentScreen('map');
   };
 
   const handleRoleSelect = (role: Role) => {
     setSelectedRole(role);
-    setCurrentScreen('map');
+    setCurrentScreen('loading');
   };
 
   const handleLevelSelect = (level: LevelData) => {
@@ -99,11 +99,11 @@ export default function App() {
   // Render current screen
   const renderCurrentScreen = () => {
     switch (currentScreen) {
-      case 'loading':
-        return <LoadingScreen onComplete={handleLoadingComplete} />;
-      
       case 'roleSelection':
         return <RoleSelection onSelectRole={handleRoleSelect} />;
+      
+      case 'loading':
+        return <LoadingScreen onComplete={handleLoadingComplete} />;
       
       case 'map':
         return selectedRole ? (

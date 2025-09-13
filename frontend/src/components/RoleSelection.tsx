@@ -7,7 +7,7 @@ interface RoleSelectionProps {
 }
 
 export function RoleSelection({ onSelectRole }: RoleSelectionProps) {
-  const roles: Role[] = ['SDE', 'DS', 'MLE'];
+  const roles: Role[] = ['SDE'];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black p-4 relative overflow-hidden">
@@ -28,21 +28,21 @@ export function RoleSelection({ onSelectRole }: RoleSelectionProps) {
       <div className="relative z-10 max-w-6xl mx-auto py-12">
         {/* Header */}
         <div className="text-center mb-16 space-y-4">
-          <h1 className="text-5xl font-bold text-white/95">Choose Your Path</h1>
+          <h1 className="text-5xl font-bold text-white/95">Software Development Engineer</h1>
           <p className="text-white/70 text-xl max-w-2xl mx-auto">
-            Select your interview specialization and embark on a journey to master technical challenges
+            Master the art of software engineering through challenging technical interviews
           </p>
         </div>
 
         {/* Role Cards */}
-        <div className="grid md:grid-cols-3 gap-8 px-4">
+        <div className="flex justify-center px-4">
           {roles.map((roleId) => {
             const role = gameData[roleId];
             return (
               <div
                 key={roleId}
                 onClick={() => onSelectRole(roleId)}
-                className="group relative p-8 bg-black/40 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl cursor-pointer transition-all duration-300 hover:scale-105 hover:border-white/40"
+                className="group relative p-8 bg-black/40 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl cursor-pointer transition-all duration-300 hover:scale-105 hover:border-white/40 max-w-md"
               >
                 {/* Glass effect overlay */}
                 <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-white/2 rounded-3xl" />
@@ -102,7 +102,7 @@ export function RoleSelection({ onSelectRole }: RoleSelectionProps) {
         {/* Footer */}
         <div className="text-center mt-16 space-y-4">
           <p className="text-white/50">
-            Each path contains 3 challenging levels with unique boss encounters
+            Master 3 challenging levels with unique boss encounters
           </p>
           <div className="flex justify-center gap-8 text-sm text-white/40">
             <span>🟢 Beginner</span>
