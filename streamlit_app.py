@@ -8,6 +8,7 @@ import streamlit as st
 import requests
 import json
 import time
+import os
 from datetime import datetime
 from typing import Dict, Any, Optional
 import plotly.express as px
@@ -326,7 +327,7 @@ if 'conversation_history' not in st.session_state:
 if 'user_id' not in st.session_state:
     st.session_state.user_id = DEFAULT_USER_ID
 if 'api_key' not in st.session_state:
-    st.session_state.api_key = ""
+    st.session_state.api_key = os.getenv("ANTHROPIC_API_KEY", "")
 if 'current_answer' not in st.session_state:
     st.session_state.current_answer = ""
 if 'chat_messages' not in st.session_state:
@@ -558,9 +559,15 @@ def main():
             st.session_state.user_id = user_id
             
             # API Key input (optional)
-            api_key = st.text_input("API Key (Optional)", value=st.session_state.api_key, type="password", 
-                                   help="Optional API key for enhanced features")
-            st.session_state.api_key = api_key
+            env_api_key = os.getenv("ANTHROPIC_API_KEY", "")
+            if env_api_key:
+                st.info("🔑 API Key loaded from environment variable")
+                api_key = env_api_key
+                st.session_state.api_key = api_key
+            else:
+                api_key = st.text_input("API Key (Optional)", value=st.session_state.api_key, type="password", 
+                                       help="Optional API key for enhanced features. Can also be set via ANTHROPIC_API_KEY environment variable.")
+                st.session_state.api_key = api_key
         
         with col2:
             # Backend status
