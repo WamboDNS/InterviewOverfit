@@ -740,6 +740,9 @@ def main():
                                 old_level = old_game_state.get('level', 1) if old_game_state else 1
                                 new_level = new_game_state.get('level', 1)
                                 
+                                # Debug: Show level change detection
+                                st.write(f"🔍 Debug: old_level={old_level}, new_level={new_level}")
+                                
                                 if new_level > old_level:
                                     # Player leveled up - show victory message and clear chat
                                     st.success(f"🎯 Boss defeated! Moving to level {new_level}!")
